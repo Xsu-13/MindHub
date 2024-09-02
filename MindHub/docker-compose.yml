@@ -1,0 +1,27 @@
+version: '3.4'
+
+services:
+  mindhub.api:
+    image: ${DOCKER_REGISTRY-}mindhubapi
+    build:
+      context: .
+      dockerfile: MindHub/Dockerfile
+    networks:
+      - mindhub_network
+
+  postgresql:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: "mindhub"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "123"
+    ports:
+      - "5432:5432"
+    networks:
+      - mindhub_network
+    container_name: postgres
+    hostname: postgres
+
+networks:
+  mindhub_network:
+    driver: bridge

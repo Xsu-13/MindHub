@@ -1,3 +1,13 @@
 ﻿MindHub/.vs
 MindHub/MindHub/bin
 MindHub/MindHub/obj
+MindHub/MindHub.Common/bin
+MindHub/MindHub.Common/obj
+MindHub/MindHub.DAL/bin
+MindHub/MindHub.DAL/obj
+MindHub/MindHub.Domain/bin
+MindHub/MindHub.Domain/obj
+MindHub/MindHub.Services/bin
+MindHub/MindHub.Services/obj
+MindHub/MindHub.Tests/bin
+MindHub/MindHub.Tests/obj
