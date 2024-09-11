@@ -1,14 +1,14 @@
-﻿using MindHub.Common.Enums;
-using MindHub.Domain.Interfaces;
+﻿using MindHub.Services.Maps;
+using MindHub.Services.Styles;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MindHub.DAL
+namespace MindHub.Services.Nodes
 {
-    public class Node : IEntityBase
+    public class NodeDto
     {
         public int Id { get; set; }
         public int MapId { get; set; }
@@ -18,11 +18,8 @@ namespace MindHub.DAL
         public float X { get; set; }
         public float Y { get; set; }
         public int? StyleId { get; set; }
-        public Map Map { get; set; }
-        public Node ParentNode { get; set; }
-        public Style Style { get; set; }
-        public RecordStatus RecordStatus { get; set; }
-        public DateTime RecordCreateDate { get; set; } = DateTime.UtcNow;
-        public DateTime? RecordUpdateDate { get; set; }
+        public MapDto Map { get; set; }
+        public NodeDto ParentNode { get; set; }
+        public StyleDto Style { get; set; }
     }
 }

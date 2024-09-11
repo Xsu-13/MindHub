@@ -1,15 +1,37 @@
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+using MindHub.API.Middlewares;
+using MindHub.DAL;
+using MindHub.Services;
+using SmartDocs.DAL;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Host
+                .UseServiceProviderFactory(new AutofacServiceProviderFactory())
+                .ConfigureContainer<ContainerBuilder>(c =>
+                {
+                    c.RegisterModule<DalModule>(); // dal first
+                    c.RegisterModule<ServiceModule>(); //services after 
+                });
+
+builder.Services.Configure<DatabaseSettings>(options => builder.Configuration.GetSection("DatabaseSettings").Bind(options));
+
+builder.Services.AddControllers().AddNewtonsoftJson(options =>
+{
+    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseUserContext();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

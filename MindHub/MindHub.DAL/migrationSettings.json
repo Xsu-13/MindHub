@@ -1,6 +1,6 @@
 {
   "DatabaseSettings": {
-    "ConnectionString": "Host=localhost;Port=5432;Database=SmartDocs;Username=postgres;Password=123;Include Error Detail=true",
-    "MigrateOnStartup": true
+    "ConnectionString": "Host=postgres;Port=5432;Database=mindhub;Username=postgres;Password=123;Include Error Detail=true",
+    "MigrateOnStartup": false
   }
 }

@@ -7,3 +7,5 @@ dotnet ef database update
 dotnet ef migrations add {$NewOne} --context {Context} --project .\MindHub.DAL.csproj --startup-project .\MindHub.DAL.csproj
 dotnet ef database update --context {Context} --project .\MindHub.DAL.csproj --startup-project .\MindHub.DAL.csproj    
 ```
+
+dotnet ef migrations add InitModels --context MindHubContext --project .\MindHub.DAL.csproj --startup-project .\MindHub.DAL.csproj

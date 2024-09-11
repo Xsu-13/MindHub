@@ -1,7 +1,10 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MindHub.Common;
+using MindHub.DAL.Repositories;
 using SmartDocs.DAL;
 using Module = Autofac.Module;
 
@@ -15,6 +18,15 @@ namespace MindHub.DAL
                 .Where(c => c.IsClass)
                 .InstancePerLifetimeScope()
                 .AsImplementedInterfaces();
+
+            builder
+                .RegisterGeneric(typeof(RepositoryBase<>))
+                .As(typeof(IRepository<>))
+                .InstancePerLifetimeScope();
+
+            builder
+                .RegisterType<UserContextProviderCommon>()
+                .As<IUserContextProvider>();
 
             var services = new ServiceCollection();
 

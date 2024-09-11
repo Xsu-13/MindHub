@@ -14,8 +14,12 @@ namespace MindHub.DAL
         {
         }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-            => optionsBuilder.LogTo(Console.WriteLine);
+        #region DbSet Definitions
+        public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<Map> Maps { get; set; }
+        public virtual DbSet<Node> Nodes { get; set; }
+        public virtual DbSet<Style> Styles { get; set; }
+        #endregion
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
