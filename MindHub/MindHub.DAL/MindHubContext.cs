@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using MindHub.Domain.Interfaces;
 using System.Reflection;
 
@@ -20,6 +21,12 @@ namespace MindHub.DAL
         public virtual DbSet<Node> Nodes { get; set; }
         public virtual DbSet<Style> Styles { get; set; }
         #endregion
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            //optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=mindhub;Username=postgres;Password=123");
+            base.OnConfiguring(optionsBuilder);
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using MindHub.Common;
 using MindHub.Services.Nodes;
 using MindHub.Services.Styles;
@@ -19,12 +20,12 @@ namespace MindHub.API.Controllers
             _userService = userService;
         }
 
-        [HttpPost("signup/email={email}&password={password}")]
-        public async Task<ActionResult> SignUp([FromRoute] string email, [FromRoute] string password)
+        [HttpPost("signup")]
+        public async Task<ActionResult> SignUp([FromQuery] string username, [FromQuery] string email, [FromQuery] string password)
         {
-            var fields = await _userService.SingUp(email, password);
+            await _userService.SingUp(username, email, password);
 
-            return fields ? Ok() : BadRequest();
+            return Ok();
         }
 
         [HttpPost("login/email={email}&password={password}")]
@@ -32,7 +33,7 @@ namespace MindHub.API.Controllers
         {
             var fields = await _userService.Login(email, password);
 
-            return fields ? Ok() : BadRequest();
+            return !fields.IsNullOrEmpty() ? Ok() : BadRequest();
         }
 
 

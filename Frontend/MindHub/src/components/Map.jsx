@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
-import './App.css'
 import { dia, shapes } from '@joint/core';
 
-function App() {
+function Map() {
   useEffect(() => {
     const namespace = shapes;
 
@@ -20,7 +19,7 @@ function App() {
   
 
   const rect1 = new shapes.standard.Rectangle();
-  rect1.position(25, 25);
+  rect1.position(500, 500);
   rect1.resize(180, 50);
   rect1.addTo(graph);
 
@@ -63,4 +62,4 @@ link.addTo(graph);
   )
 }
 
-export default App
+export default Map

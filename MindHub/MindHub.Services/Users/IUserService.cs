@@ -9,7 +9,7 @@ namespace MindHub.Services.Users
 {
     public interface IUserService : IService<UserDto>
     {
-        Task<bool> SingUp(string email, string password);
-        Task<bool> Login(string email, string password);
+        Task SingUp(string username, string email, string password);
+        Task<string> Login(string email, string password);
     }
 }

@@ -9,6 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+builder.Services.Configure<DatabaseSettings>(options => builder.Configuration.GetSection("DatabaseSettings").Bind(options));
+
 builder.Host
                 .UseServiceProviderFactory(new AutofacServiceProviderFactory())
                 .ConfigureContainer<ContainerBuilder>(c =>
@@ -16,8 +18,6 @@ builder.Host
                     c.RegisterModule<DalModule>(); // dal first
                     c.RegisterModule<ServiceModule>(); //services after 
                 });
-
-builder.Services.Configure<DatabaseSettings>(options => builder.Configuration.GetSection("DatabaseSettings").Bind(options));
 
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
 {
