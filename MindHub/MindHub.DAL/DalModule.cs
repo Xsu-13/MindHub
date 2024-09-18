@@ -1,12 +1,12 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MindHub.Common;
 using MindHub.DAL.Repositories;
-using SmartDocs.DAL;
 using Module = Autofac.Module;
+using MindHub.DAL;
+using MindHub.Services.Users;
 
 namespace MindHub.DAL
 {
@@ -57,6 +57,10 @@ namespace MindHub.DAL
             var dbSettings = cfg.GetSection("DatabaseSettings");
 
             services.Configure<DatabaseSettings>(options => dbSettings.Bind(options));
+
+            var jwtoptions = cfg.GetSection("JwtOptions");
+
+            services.Configure<JwtOptions>(options => jwtoptions.Bind(options));
 
             builder.Populate(services);
 

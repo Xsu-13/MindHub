@@ -1,65 +1,128 @@
-import { useEffect } from 'react';
-import { dia, shapes } from '@joint/core';
+import { createElement, useEffect, useRef } from 'react';
+import { elementTools, dia, shapes } from '@joint/core';
+import "../styles/MapStyle.css";
 
 function Map() {
+  const paperRef = useRef(null);
+
   useEffect(() => {
     const namespace = shapes;
 
-  const graph = new dia.Graph({}, { cellNamespace: namespace });
+    const graph = new dia.Graph({}, { cellNamespace: namespace });
 
-  const paper = new dia.Paper({
-      el: document.getElementById('paper'),
+    const paper = new dia.Paper({
+      el: paperRef.current,
       model: graph,
       width: 10000,
       height: 10000,
       background: { color: '#F5F5F5' },
-      cellViewNamespace: namespace
-  });
+      cellViewNamespace: namespace,
+      preventDefaultViewAction: false
+    });
 
-  
+    elementTools.PlusButton = elementTools.Button.extend({
+      name: 'plus-button',
+      options: {
+        markup: [{
+          tagName: 'circle',
+          selector: 'button',
+          attributes: {
+            'r': 7,
+            'fill': '#FF0000', // Red fill for the button
+            'cursor': 'pointer'
+          }
+        }, {
+          tagName: 'text',
+          selector: 'icon',
+          attributes: {
+            'text-anchor': 'middle',
+            'y': '0.3em',
+            'fill': '#FFFFFF', // White plus icon color
+            'font-size': 14,
+            'pointer-events': 'none'
+          },
+          textContent: '+' // Plus sign
+        }],
+        x: '100%',
+        y: '100%',
+        offset: {
+          x: 0,
+          y: 10
+        },
+        rotate: true,
+        action: function (evt) {
+          //alert('Clicked on: ' + this.model.id);
+          const currentElement = this.model;
+          const position = currentElement.position();
+          const newX = position.x + 250; // Position the new element to the right
+          const newY = position.y + 50;  // Adjust Y if necessary
 
-  const rect1 = new shapes.standard.Rectangle();
-  rect1.position(500, 500);
-  rect1.resize(180, 50);
-  rect1.addTo(graph);
+          // Create a new rectangle element
+          const newRect = CreateElement("New Node", graph, {x:newX, y:newY});
 
-  const rect2 = new shapes.standard.Rectangle();
-  rect2.position(95, 225);
-  rect2.resize(180, 50);
-  rect2.attr({
-    body: {
-        rx: 10, // add a corner radius
-        ry: 10,
-        fill: '#197575'
-    },
-    label: {
-      textAnchor: 'left', // align text to left
-      x: 10, // offset text from right edge of model bbox
-      fill: '#fff',
-      fontSize: 18
-  }
-});
-  rect2.addTo(graph);
+          // Create a link between the current element and the new one
+          const newLink = new shapes.standard.Link();
+          newLink.source(currentElement);
+          newLink.target(newRect);
+          newLink.addTo(graph);
+        }
+      }
+    });
 
-  const link = new shapes.standard.Link();
-link.source(rect1);
-link.target(rect2);
-link.addTo(graph);
+    var plusButton = new elementTools.PlusButton({
+      x: '100%',
+      y: '50%',
+      offset: { x: 10, y: 0 },
+      graph: graph // Adjust positioning for the button on the right
+    });
 
-  rect1.attr('body', { stroke: '#C94A46', rx: 2, ry: 2 });
-  rect2.attr('body', { stroke: '#C94A46', rx: 2, ry: 2 });
+    var plusButtonBottom = new elementTools.PlusButton({
+      x: '50%',
+      y: '100%',
+      offset: { x: 0, y: 10 },
+      graph: graph // Adjust positioning for the button at the bottom
+    });
 
-  rect1.attr('label', { text: 'Hello', fill: '#353535' });
-  rect2.attr('label', { text: 'World!', fill: '#353535' });
+    var toolsView = new dia.ToolsView({
+      tools: [
+        plusButton,
+        plusButtonBottom // Adding a second button for the bottom position
+      ]
+    });
+
+    var rect1 = CreateElement("Hello", graph, {x:100, y:100})
+    var rect2 = CreateElement("World", graph, {x:300, y:300})
+
+    const link = new shapes.standard.Link();
+    link.source(rect1);
+    link.target(rect2);
+    link.addTo(graph);
+
+    paper.on('element:pointerclick', function (elementView) {
+      elementView.addTools(toolsView);
+    });
+
   }, []);
-
-  
 
   return (
     <>
-      <div id="paper"></div>
+      <div id="paper" ref={paperRef}></div>
     </>
   )
 }
 
-export default Map
+
+function CreateElement(innertext, graph, position)
+{
+  const rect1 = new shapes.standard.Rectangle();
+  rect1.position(position.x, position.y);
+  rect1.resize(180, 50);
+  rect1.addTo(graph);
+
+  rect1.attr('body', { stroke: '#C94A46', rx: 2, ry: 2 });
+  rect1.attr('label', { text: innertext, fill: '#353535' });
+
+  return rect1;
+}
+
+export default Map;

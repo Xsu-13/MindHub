@@ -1,0 +1,41 @@
+.node {
+    display: inline-block;
+    padding: 10px;
+    border: 2px solid #008b8b;
+    border-radius: 5px;
+    position: relative; /* Ensure child elements are positioned relative to this */
+    cursor: pointer;
+}
+
+.plus-icon {
+    width: 20px;
+    height: 20px;
+    background-color: #00bfff;
+    border-radius: 50%;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    z-index: 10; /* Ensure it's on top of other elements */
+    text-align: center; /* Center text inside the icon */
+}
+
+.plus-icon.left {
+    top: 50%;
+    left: -30px;
+    transform: translateY(-50%);
+}
+
+.plus-icon.right {
+    top: 50%;
+    right: -30px;
+    transform: translateY(-50%);
+}
+
+#paper {
+    position: relative; /* Ensure the container allows absolute positioning */
+    width: 100%;
+    height: 100%;
+}

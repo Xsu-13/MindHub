@@ -3,13 +3,14 @@ using Autofac.Extensions.DependencyInjection;
 using MindHub.API.Middlewares;
 using MindHub.DAL;
 using MindHub.Services;
-using SmartDocs.DAL;
+using MindHub.DAL;
+using MindHub.Services.Users;
 
 var builder = WebApplication.CreateBuilder(args);
+var services = builder.Services;
 
-// Add services to the container.
-
-builder.Services.Configure<DatabaseSettings>(options => builder.Configuration.GetSection("DatabaseSettings").Bind(options));
+services.Configure<DatabaseSettings>(options => builder.Configuration.GetSection("DatabaseSettings").Bind(options));
+services.Configure<JwtOptions>(options => builder.Configuration.GetSection("JwtOptions").Bind(options));
 
 builder.Host
                 .UseServiceProviderFactory(new AutofacServiceProviderFactory())
@@ -19,13 +20,13 @@ builder.Host
                     c.RegisterModule<ServiceModule>(); //services after 
                 });
 
-builder.Services.AddControllers().AddNewtonsoftJson(options =>
+services.AddControllers().AddNewtonsoftJson(options =>
 {
     options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
 });
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+services.AddEndpointsApiExplorer();
+services.AddSwaggerGen();
 
 var app = builder.Build();
 

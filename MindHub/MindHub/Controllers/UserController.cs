@@ -28,12 +28,22 @@ namespace MindHub.API.Controllers
             return Ok();
         }
 
-        [HttpPost("login/email={email}&password={password}")]
-        public async Task<ActionResult> Login([FromRoute] string email, [FromRoute] string password)
+        [HttpPost("login")]
+        public async Task<ActionResult> Login([FromQuery] string email, [FromQuery] string password)
         {
-            var fields = await _userService.Login(email, password);
+            var token = await _userService.Login(email, password);
+            if(!token.IsNullOrEmpty())
+                Response.Cookies.Append("token", token);
 
-            return !fields.IsNullOrEmpty() ? Ok() : BadRequest();
+            return !token.IsNullOrEmpty() ? Ok() : BadRequest();
+        }
+
+        [HttpPost("logout")]
+        public async Task<ActionResult> Logout()
+        {
+            Response.Cookies.Delete("token");
+
+            return Ok();
         }
 
 

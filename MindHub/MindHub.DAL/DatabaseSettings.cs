@@ -1,4 +1,4 @@
-﻿namespace SmartDocs.DAL
+﻿namespace MindHub.DAL
 {
     public class DatabaseSettings
     {

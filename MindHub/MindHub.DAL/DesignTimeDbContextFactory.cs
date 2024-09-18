@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using SmartDocs.DAL;
+using MindHub.DAL;
 using System;
 using System.Collections.Generic;
 using System.Linq;
