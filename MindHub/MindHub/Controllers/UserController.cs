@@ -21,17 +21,17 @@ namespace MindHub.API.Controllers
         }
 
         [HttpPost("signup")]
-        public async Task<ActionResult> SignUp([FromQuery] string username, [FromQuery] string email, [FromQuery] string password)
+        public async Task<ActionResult> SignUp([FromBody] SignUpRequest request)
         {
-            await _userService.SingUp(username, email, password);
+            await _userService.SingUp(request.Username, request.Email, request.Password);
 
             return Ok();
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult> Login([FromQuery] string email, [FromQuery] string password)
+        public async Task<ActionResult> Login([FromBody] LoginRequest request)
         {
-            var token = await _userService.Login(email, password);
+            var token = await _userService.Login(request.Email, request.Password);
             if(!token.IsNullOrEmpty())
                 Response.Cookies.Append("token", token);
 
@@ -80,5 +80,18 @@ namespace MindHub.API.Controllers
         {
             await _userService.DeleteAsync(id);
         }
+    }
+
+    public class LoginRequest
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+
+    public class SignUpRequest
+    {
+        public string Username { get; set; }
+        public string Email { get; set; }
+        public string Password { get; set; }
     }
 }

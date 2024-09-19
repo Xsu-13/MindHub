@@ -93,6 +93,9 @@ function Map() {
     var rect1 = CreateElement("Hello", graph, {x:100, y:100})
     var rect2 = CreateElement("World", graph, {x:300, y:300})
 
+    console.log("rect1: ")
+    console.log(rect1)
+
     const link = new shapes.standard.Link();
     link.source(rect1);
     link.target(rect2);
