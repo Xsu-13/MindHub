@@ -3,6 +3,7 @@ import Map from './Map.jsx'
 import MapList from './MapList.jsx'
 import Login from './LoginForm.jsx'
 import SignUp from './SignUpForm.jsx'
+import EditableCodeBlock from './EditableCodeBlock.jsx'
 
 function App() {
 
@@ -13,6 +14,7 @@ function App() {
         <Route path="/map" element={<Map />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/code" element={<EditableCodeBlock />} />
       </Routes>
     </Router>
   )

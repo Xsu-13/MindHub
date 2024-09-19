@@ -1,15 +1,3 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
-}
-
-body {
-    background-color: #f9f9f9;
-    color: #333;
-}
-
 .container {
     max-width: 1200px;
     margin: 20px auto;
@@ -17,6 +5,7 @@ body {
     background-color: white;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
 }
 
 header h1 {
@@ -72,4 +61,4 @@ header h1 {
 
 .maps-list tbody tr:hover {
     background-color: #f9f9f9;
-}
+} 

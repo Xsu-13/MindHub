@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/MapListStyle.css'
 
@@ -20,29 +20,28 @@ function MapList() {
 });
 }, []);
 
-
   return (
     <>
-      <div class="container">
+      <div className="container">
         <header>
             <h1>Добро пожаловать Xsu!</h1>
         </header>
         
-        <section class="templates">
+        <section className="templates">
             <h2>Шаблоны</h2>
-            <div class="template-buttons">
-                <div class="template-card selected" onClick={handleEmptyMapClick}>Пустая карта</div>
-                <div class="template-card">Интеллект-карта</div>
-                <div class="template-card">Органиграмма</div>
-                <div class="template-card">Список</div>
-                <div class="template-card">Цели SMART</div>
-                <div class="template-card">Мой бизнес-план</div>
-                <div class="template-card">Заметки Корнелла</div>
-                <div class="template-card">Все шаблоны</div>
+            <div className="template-buttons">
+                <div className="template-card selected" onClick={handleEmptyMapClick}>Пустая карта</div>
+                <div className="template-card">Интеллект-карта</div>
+                <div className="template-card">Органиграмма</div>
+                <div className="template-card">Список</div>
+                <div className="template-card">Цели SMART</div>
+                <div className="template-card">Мой бизнес-план</div>
+                <div className="template-card">Заметки Корнелла</div>
+                <div className="template-card">Все шаблоны</div>
             </div>
         </section>
         
-        <section class="maps-list">
+        <section className="maps-list">
             <h2>Все карты</h2>
             <table>
                 <thead>

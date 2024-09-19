@@ -15,8 +15,8 @@ function Map() {
     const paper = new dia.Paper({
       el: paperRef.current,
       model: graph,
-      width: 10000,
-      height: 10000,
+      width: '100%',
+      height: window.innerHeight - 10,
       background: { color: '#F5F5F5' },
       cellViewNamespace: namespace,
       preventDefaultViewAction: false
@@ -71,6 +71,45 @@ function Map() {
       }
     });
 
+    elementTools.Resize = elementTools.Button.extend({
+      name: 'resize',
+      options: {
+        // Define the markup for the resize tool
+        markup: [{
+          tagName: 'rect',
+          selector: 'background',
+          attributes: {
+            'fill': 'white',
+            'stroke': '#333333',
+            'stroke-width': 1,
+            'pointer-events': 'all',
+            'cursor': 'nwse-resize'
+          }
+        }, {
+          tagName: 'path',
+          selector: 'handle',
+          attributes: {
+            'd': 'M0,0 L8,0 L8,8 L0,8 Z',
+            'fill': '#333333',
+            'cursor': 'nwse-resize'
+          }
+        }],
+        // Define the size and position of the resize tool
+        size: { width: 10, height: 10 },
+        position: { x: '100%', y: '100%', offset: { x: -5, y: -5 } },
+        // Define the resize behavior
+        action: function(evt, x, y) {
+          const element = this.model;
+          const boundingBox = element.getBBox();
+          const newWidth = x - boundingBox.x;
+          const newHeight = y - boundingBox.y;
+          if (newWidth > 0 && newHeight > 0) {
+            element.resize(newWidth, newHeight);
+          }
+        }
+      }
+    });
+
     var plusButton = new elementTools.PlusButton({
       x: '100%',
       y: '50%',
@@ -85,14 +124,17 @@ function Map() {
       graph: graph // Adjust positioning for the button at the bottom
     });
 
+    var resizeButton = new elementTools.Resize();
+
     var toolsView = new dia.ToolsView({
       tools: [
         plusButton,
-        plusButtonBottom // Adding a second button for the bottom position
+        plusButtonBottom, // Adding a second button for the bottom position
+        //resizeButton
       ]
     });
 
-    var rect1 = CreateElement("Hello", graph, {x:100, y:100})
+    var rect1 = CreateElement("Hello", graph, {x:window.innerWidth/2 - 50, y:window.innerHeight/2 - 50}, "#ff5252")
     var rect2 = CreateElement("World", graph, {x:300, y:300})
 
     const link = new shapes.standard.Link();
@@ -141,8 +183,7 @@ function Map() {
     position: 'absolute',
     zIndex: 1000,
     padding: '5px',
-    backgroundColor: '#fff',
-    width: 100
+    backgroundColor: '#fff'
   };
 
   return (
@@ -151,7 +192,7 @@ function Map() {
       {editingNode && (
           <input
             type="text"
-            style={{ ...inputStyle, top: editingNode.position().y + 10, left: editingNode.position().x + 10}}
+            style={{ ...inputStyle, width: 150, top: editingNode.position().y + 10, left: editingNode.position().x + 10}}
             value={inputValue}
             onChange={handleInputChange}
             onBlur={handleInputBlur}
@@ -164,14 +205,14 @@ function Map() {
 }
 
 
-function CreateElement(innertext, graph, position)
+function CreateElement(innertext, graph, position, backgroundColor = "#FFFFFF")
 {
   const rect1 = new shapes.standard.Rectangle();
   rect1.position(position.x, position.y);
   rect1.resize(180, 50);
   rect1.addTo(graph);
 
-  rect1.attr('body', { stroke: '#C94A46', rx: 2, ry: 2 });
+  rect1.attr('body', { stroke: '#C94A46', fill: backgroundColor, rx: 2, ry: 2 });
   rect1.attr('label', { text: innertext, fill: '#353535' });
 
   return rect1;
