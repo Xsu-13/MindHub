@@ -1,9 +1,11 @@
-import { createElement, useEffect, useRef } from 'react';
+import { createElement, useEffect, useState, useRef } from 'react';
 import { elementTools, dia, shapes } from '@joint/core';
 import "../styles/MapStyle.css";
 
 function Map() {
   const paperRef = useRef(null);
+  const [editingNode, setEditingNode] = useState(null);
+  const [inputValue, setInputValue] = useState('');
 
   useEffect(() => {
     const namespace = shapes;
@@ -93,9 +95,6 @@ function Map() {
     var rect1 = CreateElement("Hello", graph, {x:100, y:100})
     var rect2 = CreateElement("World", graph, {x:300, y:300})
 
-    console.log("rect1: ")
-    console.log(rect1)
-
     const link = new shapes.standard.Link();
     link.source(rect1);
     link.target(rect2);
@@ -103,13 +102,63 @@ function Map() {
 
     paper.on('element:pointerclick', function (elementView) {
       elementView.addTools(toolsView);
+      //elementView.addTools(new elementTools.Control());
     });
 
+    paper.on('element:pointerdblclick', function (elementView) {
+      console.log(elementView)
+      // Показать ввод для редактирования
+      setEditingNode(elementView.model);
+      setInputValue(elementView.model.attr('label/text'));
+  });
   }, []);
+
+   // Handle input change
+   const handleInputChange = (event) => {
+    setInputValue(event.target.value);
+  };
+
+  // Handle input blur
+  const handleInputBlur = () => {
+    if (editingNode) {
+      editingNode.attr('label', { text: inputValue });
+      setEditingNode(null);
+      setInputValue('');
+    }
+  };
+
+  const handleInputKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      if (editingNode) {
+        editingNode.attr('label', { text: inputValue });
+        setEditingNode(null);
+        setInputValue('');
+      }
+    }
+  };
+  // Create an input element for editing
+  const inputStyle = {
+    position: 'absolute',
+    zIndex: 1000,
+    padding: '5px',
+    backgroundColor: '#fff',
+    width: 100
+  };
 
   return (
     <>
       <div id="paper" ref={paperRef}></div>
+      {editingNode && (
+          <input
+            type="text"
+            style={{ ...inputStyle, top: editingNode.position().y + 10, left: editingNode.position().x + 10}}
+            value={inputValue}
+            onChange={handleInputChange}
+            onBlur={handleInputBlur}
+            onKeyDown={handleInputKeyDown}
+            autoFocus
+          />
+        )}
     </>
   )
 }
