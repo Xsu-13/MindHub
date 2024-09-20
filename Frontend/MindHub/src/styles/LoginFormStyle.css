@@ -8,6 +8,16 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    opacity: 0; 
+    transform: translate(-50%, -60%); 
+    transition: opacity 0.5s ease, transform 0.5s ease; 
+    z-index: 100;
+}
+
+.login-container.show {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+    z-index: 200;
 }
 
 h2 {
@@ -49,8 +59,14 @@ button:hover {
     background-color: #0056b3;
 }
 
-#errorMessage {
+#login-errorMessage {
     color: red;
     text-align: center;
     margin-top: 15px;
-} 
+}
+
+#signup-errorMessage {
+    color: red;
+    text-align: center;
+    margin-top: 15px;
+}

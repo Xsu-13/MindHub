@@ -28,7 +28,7 @@ namespace MindHub.Services.Users
             _jwtProvider = jwtProvider;
         }
 
-        public async Task SingUp(string username, string email, string password)
+        public async Task<UserDto> SingUp(string username, string email, string password)
         {
             var hashedPassword = _passwordHasher.Generate(password);
             var user = new UserDto()
@@ -38,10 +38,10 @@ namespace MindHub.Services.Users
                 PasswordHash = hashedPassword
             };
 
-            await CreateAsync(user);
+            return await CreateAsync(user);
         }
 
-        public async Task<string> Login(string email, string password)
+        public async Task<UserDto> Login(string email, string password)
         {
             var user = _repository.GetQuery()
                 .Where(u => u.Email == email)
@@ -59,9 +59,9 @@ namespace MindHub.Services.Users
                 throw new Exception("Incorrect password or login, check it out");
             }
 
-            var token = _jwtProvider.GenerateToken(user!);
+            user.Token = _jwtProvider.GenerateToken(user!);
 
-            return token;
+            return _mapper.Map<UserDto>(user);
         }
     }
 }

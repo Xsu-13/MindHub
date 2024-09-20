@@ -23,19 +23,24 @@ namespace MindHub.API.Controllers
         [HttpPost("signup")]
         public async Task<ActionResult> SignUp([FromBody] SignUpRequest request)
         {
-            await _userService.SingUp(request.Username, request.Email, request.Password);
+            var user = await _userService.SingUp(request.Username, request.Email, request.Password);
 
-            return Ok();
+            return Ok(user);
         }
 
         [HttpPost("login")]
         public async Task<ActionResult> Login([FromBody] LoginRequest request)
         {
-            var token = await _userService.Login(request.Email, request.Password);
-            if(!token.IsNullOrEmpty())
-                Response.Cookies.Append("token", token);
+            var user = await _userService.Login(request.Email, request.Password);
+            if(!user.Token.IsNullOrEmpty())
+                Response.Cookies.Append("token", user.Token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None
+                });
 
-            return !token.IsNullOrEmpty() ? Ok() : BadRequest();
+            return !user.Token.IsNullOrEmpty() ? Ok(user) : BadRequest();
         }
 
         [HttpPost("logout")]
