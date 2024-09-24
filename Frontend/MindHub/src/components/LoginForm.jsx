@@ -13,9 +13,9 @@ function LoginForm({ showLogin, showSignUp }) {
 
     const handleLoginSubmit = async (event) => {
         event.preventDefault();
-        const status = await LoginUser(loginEmail, loginPassword);
-        console.log(status);
-        if (status) {
+        const user = await LoginUser(loginEmail, loginPassword);
+        localStorage.setItem("user", JSON.stringify(user));
+        if (user !== null) {
             location.reload();
 
         } else {

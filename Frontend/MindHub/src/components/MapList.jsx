@@ -2,26 +2,69 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/MapListStyle.css';
 import LoginForm from "./LoginForm.jsx"
+import { AddMap, GetMapsByUserId } from '../services/urls.js';
+
+
 
 function MapList() {
+
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [username, setUsername] = useState("user");
+    const [user, setUser] = useState();
+    const [maps, setMaps] = useState([]);
     const [showLogin, setShowLogin] = useState(false);
     const [showSignUp, setShowSignUp] = useState(false);
     const modalRef = useRef();
-
     const navigate = useNavigate();
 
-    const handleEmptyMapClick = () => {
+    var defaultMap = {
+        UserId: user ? user.id : 0,
+        Title: "untitled",
+        Nodes: [
+            {
+                Title: "Start",
+                Content: "",
+                X: 0,
+                Y: 0
+            }
+        ]
+    };
+
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        return date.toLocaleString('ru-RU', options);
+    };
+
+    const handleEmptyMapClick = async () => {
+        await AddMap(defaultMap);
+        navigate('/map');
+    };
+
+    const handleRowClick = (item) => {
         navigate('/map');
     };
 
     useEffect(() => {
-        const user = JSON.parse(localStorage.getItem("user"));
-        if (user) {
-            setIsAuthenticated(true);
-            setUsername(user.username);
+
+        const GetMaps = async (userId) => {
+            const mapsData = await GetMapsByUserId(userId);
+            if (Array.isArray(mapsData.data)) {
+                setMaps(mapsData.data);
+            } else {
+                console.error('Полученные данные не являются массивом:', mapsData);
+                setMaps([]);
+            }
         }
+
+        if(localStorage.getItem("user") !== null)
+        {
+            const user = JSON.parse(localStorage.getItem("user"));
+            setIsAuthenticated(true);
+            setUser(user);
+
+            GetMaps(user.id);
+        }
+        
 
         const handleClickOutside = (event) => {
             if (modalRef.current && !modalRef.current.contains(event.target)) {
@@ -51,7 +94,7 @@ function MapList() {
                 {isAuthenticated ? (
                     <div>
                         <header>
-                        <h1>Добро пожаловать {username}!</h1>
+                            <h1>Добро пожаловать {user.username}!</h1>
                         </header>
                     
                     <section className="templates">
@@ -68,21 +111,16 @@ function MapList() {
                         <thead>
                             <tr>
                                 <th>Название</th>
-                                <th>Участники</th>
                                 <th>Изменено</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>Моя новая интеллект-карта</td>
-                                <td>Только Вы</td>
-                                <td>30 авг. 2024 г.</td>
-                            </tr>
-                            <tr>
-                                <td>Курсовая</td>
-                                <td>Только Вы</td>
-                                <td>6 сент. 2024 г.</td>
-                            </tr>
+                        {maps.map((item, index) => (
+                                    <tr key={index} onClick={() => handleRowClick(item)}>
+                                        <td>{item.title}</td>
+                                        <td>{formatDate(item.recordCreateDate)}</td>
+                                    </tr>
+                                ))}
                         </tbody>
                     </table>
                 </section>

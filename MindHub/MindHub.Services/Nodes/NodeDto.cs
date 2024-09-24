@@ -18,8 +18,5 @@ namespace MindHub.Services.Nodes
         public float X { get; set; }
         public float Y { get; set; }
         public int? StyleId { get; set; }
-        public MapDto Map { get; set; }
-        public NodeDto ParentNode { get; set; }
-        public StyleDto Style { get; set; }
     }
 }
