@@ -13,7 +13,11 @@ function MapList() {
     const [maps, setMaps] = useState([]);
     const [showLogin, setShowLogin] = useState(false);
     const [showSignUp, setShowSignUp] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [selectedMap, setSelectedMap] = useState(null);
+    const [menuPosition, setMenuPosition] = useState({ x: 0, yы: 0 });
     const modalRef = useRef();
+    const menuRef = useRef(null);
     const navigate = useNavigate();
 
     var defaultMap = {
@@ -43,6 +47,18 @@ function MapList() {
     const handleRowClick = (item) => {
         navigate('/map');
     };
+
+    const handleRightClick = (e, item) => {
+        e.preventDefault(); // Останавливаем стандартное поведение клика
+        setSelectedMap(item);
+        setMenuPosition({ x: e.pageX, y: e.pageY }); // Устанавливаем позицию меню
+        setIsMenuOpen(true);
+      };
+    
+      const handleOptionClick = (option) => {
+        console.log(`Выбрана опция: ${option} для карты ${selectedMap.title}`);
+        setIsMenuOpen(false); // Закрываем меню после выбора опции
+      };
 
     useEffect(() => {
 
@@ -83,18 +99,26 @@ function MapList() {
 
         document.addEventListener('mousedown', handleClickOutside);
 
-        return () => {
+        const handleClickOutsideMenu = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+              setIsMenuOpen(false); 
+            }
+          };
+      
+          document.addEventListener('mousedown', handleClickOutsideMenu);
+          return () => {
+            document.removeEventListener('mousedown', handleClickOutsideMenu);
             templateCards.forEach(card => card.removeEventListener('click', () => {}));
             document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
+          };
+    }, [menuRef]);
 
     return (
         <div className="container">
                 {isAuthenticated ? (
                     <div>
                         <header>
-                            <h1>Добро пожаловать {user.username}!</h1>
+                            <h1>Добро пожаловать, {user.username}!</h1>
                         </header>
                     
                     <section className="templates">
@@ -116,13 +140,25 @@ function MapList() {
                         </thead>
                         <tbody>
                         {maps.map((item, index) => (
-                                    <tr key={index} onClick={() => handleRowClick(item)}>
+                                    <tr key={index} onClick={() => handleRowClick(item)} onContextMenu={(e) => handleRightClick(e, item)}>
                                         <td>{item.title}</td>
                                         <td>{formatDate(item.recordCreateDate)}</td>
                                     </tr>
                                 ))}
                         </tbody>
-                    </table>
+                        </table>
+                        {isMenuOpen && (
+                            <ul
+                                className="context-menu"
+                                ref={menuRef}
+                                style={{ top: menuPosition.y, left: menuPosition.x }}>
+                                <li onClick={() => handleOptionClick('Открыть')}>Открыть</li>
+                                {/* <li onClick={() => handleOptionClick('Копировать')}>Копировать</li> */}
+                                <li onClick={() => handleOptionClick('Переместить в корзину')}>
+                                Переместить в корзину
+                                </li>
+                            </ul>
+                            )}
                 </section>
                     </div>
                 ) : (

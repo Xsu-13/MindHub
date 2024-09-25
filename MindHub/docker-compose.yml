@@ -6,6 +6,9 @@ services:
     build:
       context: .
       dockerfile: MindHub/Dockerfile
+    ports:
+      - "5000:8080"
+      - "5001:8081"
     networks:
       - mindhub_network
 
