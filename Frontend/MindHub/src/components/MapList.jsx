@@ -2,8 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/MapListStyle.css';
 import LoginForm from "./LoginForm.jsx"
-import { AddMap, GetMapsByUserId } from '../services/urls.js';
-
+import { AddMap, PatchMap, DeleteMap, GetMapsByUserId } from '../services/urls.js';
 
 
 function MapList() {
@@ -16,6 +15,8 @@ function MapList() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [selectedMap, setSelectedMap] = useState(null);
     const [menuPosition, setMenuPosition] = useState({ x: 0, yы: 0 });
+    const [isRenaming, setIsRenaming] = useState(false);
+    const [newTitle, setNewTitle] = useState("");
     const modalRef = useRef();
     const menuRef = useRef(null);
     const navigate = useNavigate();
@@ -45,19 +46,51 @@ function MapList() {
     };
 
     const handleRowClick = (item) => {
-        navigate('/map');
+        //navigate('/map');
     };
 
     const handleRightClick = (e, item) => {
-        e.preventDefault(); // Останавливаем стандартное поведение клика
+        e.preventDefault();
         setSelectedMap(item);
-        setMenuPosition({ x: e.pageX, y: e.pageY }); // Устанавливаем позицию меню
+        setMenuPosition({ x: e.pageX, y: e.pageY });
         setIsMenuOpen(true);
       };
+
+      const handleRename = async (mapId, title) => {
+        setIsRenaming(false);
+        setIsMenuOpen(false);
+        var patch = {
+            title: title
+        }
+        await PatchMap(mapId, patch);
+        const updatedMaps = maps.map((map) =>
+            map.id === mapId ? { ...map, title: newTitle } : map
+          )
+
+        setMaps(updatedMaps);
+      };
     
-      const handleOptionClick = (option) => {
-        console.log(`Выбрана опция: ${option} для карты ${selectedMap.title}`);
-        setIsMenuOpen(false); // Закрываем меню после выбора опции
+      const handleOptionClick = async (option) => {
+        if (option === 'Переименовать') {
+            setIsRenaming(true);
+            setNewTitle(selectedMap.title);
+            setIsMenuOpen(false);
+          }
+          else if (option === 'Открыть') {
+            navigate('/map');
+          } 
+          else if (option === 'Переместить в корзину') {
+            await DeleteMap(selectedMap.id);
+            const updatedMaps = maps.filter((map) =>
+                map.id !== selectedMap.id
+              )
+    
+            setMaps(updatedMaps);
+            setIsMenuOpen(false);
+          } 
+          else {
+            setIsMenuOpen(false);
+          }
       };
 
     useEffect(() => {
@@ -141,7 +174,19 @@ function MapList() {
                         <tbody>
                         {maps.map((item, index) => (
                                     <tr key={index} onClick={() => handleRowClick(item)} onContextMenu={(e) => handleRightClick(e, item)}>
-                                        <td>{item.title}</td>
+                                        <td>{isRenaming && selectedMap.id === item.id ? (
+                                            <input
+                                            type="text"
+                                            value={newTitle}
+                                            onChange={(e) => setNewTitle(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') handleRename(item.id, e.target.value); // Переименовать при нажатии Enter
+                                            }}
+                                            autoFocus
+                                            />
+                                        ) : (
+                                            item.title
+                                        )}</td>
                                         <td>{formatDate(item.recordCreateDate)}</td>
                                     </tr>
                                 ))}
@@ -153,10 +198,10 @@ function MapList() {
                                 ref={menuRef}
                                 style={{ top: menuPosition.y, left: menuPosition.x }}>
                                 <li onClick={() => handleOptionClick('Открыть')}>Открыть</li>
-                                {/* <li onClick={() => handleOptionClick('Копировать')}>Копировать</li> */}
                                 <li onClick={() => handleOptionClick('Переместить в корзину')}>
                                 Переместить в корзину
                                 </li>
+                                <li onClick={() => handleOptionClick('Переименовать')}>Переименовать</li>
                             </ul>
                             )}
                 </section>
