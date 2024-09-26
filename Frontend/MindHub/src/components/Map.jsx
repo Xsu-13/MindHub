@@ -45,6 +45,45 @@ function Map() {
       preventDefaultViewAction: false
     });
 
+    const deleteButton = elementTools.Button.extend({
+      name: 'delete-button',
+      options: {
+        markup: [{
+          tagName: 'circle',
+          selector: 'button',
+          attributes: {
+            'r': 7,
+            'fill': '#FF0000',
+            'cursor': 'pointer'
+          }
+        }, {
+          tagName: 'text',
+          selector: 'icon',
+          attributes: {
+            'text-anchor': 'middle',
+            'y': '0.3em',
+            'fill': '#FFFFFF',
+            'font-size': 14,
+            'pointer-events': 'none'
+          },
+          textContent: 'x'
+        }],
+        x: '100%',
+        y: '0%',
+        offset: { x: 10, y: -10 },
+        action: async function (evt) {
+          const currentElement = this.model;
+
+          try {
+            await DeleteNode(currentElement.backId);
+            currentElement.remove();
+          } catch (error) {
+            console.error('Ошибка удаления узла:', error);
+          }
+        }
+      }
+    });
+
     elementTools.PlusButton = elementTools.Button.extend({
       name: 'plus-button',
       options: {
@@ -107,43 +146,6 @@ function Map() {
       }
     });
 
-    elementTools.Resize = elementTools.Button.extend({
-      name: 'resize',
-      options: {
-        markup: [{
-          tagName: 'rect',
-          selector: 'background',
-          attributes: {
-            'fill': 'white',
-            'stroke': '#333333',
-            'stroke-width': 1,
-            'pointer-events': 'all',
-            'cursor': 'nwse-resize'
-          }
-        }, {
-          tagName: 'path',
-          selector: 'handle',
-          attributes: {
-            'd': 'M0,0 L8,0 L8,8 L0,8 Z',
-            'fill': '#333333',
-            'cursor': 'nwse-resize'
-          }
-        }],
-
-        size: { width: 10, height: 10 },
-        position: { x: '100%', y: '100%', offset: { x: -5, y: -5 } },
-        action: function(evt, x, y) {
-          const element = this.model;
-          const boundingBox = element.getBBox();
-          const newWidth = x - boundingBox.x;
-          const newHeight = y - boundingBox.y;
-          if (newWidth > 0 && newHeight > 0) {
-            element.resize(newWidth, newHeight);
-          }
-        }
-      }
-    });
-
     var plusButton = new elementTools.PlusButton({
       x: '100%',
       y: '50%',
@@ -151,19 +153,12 @@ function Map() {
       graph: graph
     });
 
-    var plusButtonBottom = new elementTools.PlusButton({
-      x: '50%',
-      y: '100%',
-      offset: { x: 0, y: 10 },
-      graph: graph
-    });
-
-    var resizeButton = new elementTools.Resize();
+    const deleteButtonTool = new deleteButton();
 
     var toolsView = new dia.ToolsView({
       tools: [
         plusButton,
-        plusButtonBottom,
+        deleteButtonTool
         //resizeButton
       ]
     });

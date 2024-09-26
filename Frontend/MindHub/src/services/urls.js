@@ -150,7 +150,7 @@ export const fetchPatchNode = async (nodeId, patch) => {
 }
 
 export const DeleteNode = async (nodeId) => {
-    var nodes = await fetchDeleteMap(nodeId) ?? "Что-то пошло не так."
+    var nodes = await fetchDeleteNode(nodeId) ?? "Что-то пошло не так."
     return nodes; 
 }
 
