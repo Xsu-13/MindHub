@@ -170,7 +170,7 @@ function MapList() {
                         <thead>
                             <tr>
                                 <th>Название</th>
-                                <th>Изменено</th>
+                                <th>Создано</th>
                             </tr>
                         </thead>
                         <tbody>

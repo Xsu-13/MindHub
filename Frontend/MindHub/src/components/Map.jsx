@@ -75,18 +75,34 @@ function Map() {
           y: 10
         },
         rotate: true,
-        action: function (evt) {
+        action: async function (evt) {
           const currentElement = this.model;
           const position = currentElement.position();
           const newX = position.x + 250;
           const newY = position.y + 50;  
 
-          const newRect = CreateElement("New Node", graph, {x:newX, y:newY});
+          var node = await CreateNode({
+            mapId: mapId,
+            parentNodeId: currentElement.backId,
+            title: "New Node",
+            x: newX,
+            y: newY,
+            content: "",
+            style: {
+              backgroundColor: "#FFFFFF",
+              textColor: "#353535",
+              borderColor: "#C94A46",
+              fontFamily: "Sans" 
+            }
+          });
+
+          const newRect = CreateElement("New Node", graph, {x:newX, y:newY}, "#FFFFFF", node.data.id);
 
           const newLink = new shapes.standard.Link();
           newLink.source(currentElement);
           newLink.target(newRect);
           newLink.addTo(graph);
+          
         }
       }
     });
@@ -152,15 +168,38 @@ function Map() {
       ]
     });
 
-    nodes.forEach((node) => CreateElement(node.title, graph, {x: node.x, y: node.y}, node.style == null ? "#FFFFFF" : node.style.backgroundColor));
+    const nodeMap = {};
+    nodes.forEach((node) => {
+      var newNode = CreateElement(node.title, graph, {x: node.x, y: node.y}, node.style == null ? "#FFFFFF" : node.style.backgroundColor, node.id);
+      nodeMap[node.id] = newNode; 
+  });
 
-    var rect1 = CreateElement("Hello", graph, {x:window.innerWidth/2 - 50, y:window.innerHeight/2 - 50}, "#ff5252")
-    var rect2 = CreateElement("World", graph, {x:300, y:300})
+  nodes.forEach((node) => {
+    if (node.parentNodeId) {
+      const parentNode = nodeMap[node.parentNodeId];
+      const currentNode = nodeMap[node.id];
+      if (parentNode && currentNode) {
+        const newLink = new shapes.standard.Link();
+        newLink.source(parentNode);
+        newLink.target(currentNode);
+        newLink.addTo(graph);
+      }
+    }
+  });
 
-    const link = new shapes.standard.Link();
-    link.source(rect1);
-    link.target(rect2);
-    link.addTo(graph);
+  paper.on('element:pointerup', async function (elementView) {
+    const element = elementView.model;
+    const position = element.position();
+
+    try {
+      await PatchNode(element.backId, {
+        x: position.x,
+        y: position.y
+      });
+    } catch (error) {
+      console.error('Ошибка сохранения позиции:', error);
+    }
+  });
 
     paper.on('element:pointerclick', function (elementView) {
       elementView.addTools(toolsView);
@@ -187,12 +226,14 @@ function Map() {
     }
   };
 
-  const handleInputKeyDown = (event) => {
+  const handleInputKeyDown = async (event) => {
     if (event.key === 'Enter') {
       if (editingNode) {
         editingNode.attr('label', { text: inputValue });
         setEditingNode(null);
         setInputValue('');
+
+        await PatchNode(editingNode.backId, {title: inputValue});
       }
     }
   };
@@ -223,7 +264,7 @@ function Map() {
 }
 
 
-function CreateElement(innertext, graph, position, backgroundColor = "#FFFFFF")
+function CreateElement(innertext, graph, position, backgroundColor = "#FFFFFF", nodeId)
 {
   const rect1 = new shapes.standard.Rectangle();
   rect1.position(position.x, position.y);
@@ -233,6 +274,10 @@ function CreateElement(innertext, graph, position, backgroundColor = "#FFFFFF")
   rect1.attr('body', { stroke: '#C94A46', fill: backgroundColor, rx: 2, ry: 2 });
   rect1.attr('label', { text: innertext, fill: '#353535' });
 
+  if(nodeId)
+  {
+    rect1.backId = nodeId;
+  }
   return rect1;
 }
 
