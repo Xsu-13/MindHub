@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using MindHub.DAL;
 using MindHub.DAL.Repositories;
 using MindHub.Services.BaseServices;
@@ -18,6 +19,12 @@ namespace MindHub.Services.Maps
             IMapper mapper
             ) : base(repository, mapper)
         {
+        }
+
+        protected override IQueryable<Map> GetQueryCore()
+        {
+            return base.GetQueryCore()
+                .Include(f => f.Nodes);
         }
 
         public async Task<List<MapDto>> GetByUserId(int userId)

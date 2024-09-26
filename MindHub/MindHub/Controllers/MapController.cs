@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MindHub.Common;
 using MindHub.Services.Maps;
+using MindHub.Services.Nodes;
+using MindHub.Services.Styles;
 using Newtonsoft.Json.Linq;
 
 namespace MindHub.API.Controllers
@@ -9,12 +11,18 @@ namespace MindHub.API.Controllers
     public class MapController : BaseAPIController
     {
         private readonly IMapService _mapService;
+        private readonly INodeService _nodeService;
+        private readonly IStyleService _styleService;
         public MapController(
             IUserContextProvider userContextProvider,
-            IMapService mapService
+            IMapService mapService,
+            INodeService nodeService,
+            IStyleService styleService
             ) : base(userContextProvider)
         {
             _mapService = mapService;
+            _nodeService = nodeService;
+            _styleService = styleService;
         }
 
         [HttpGet]
@@ -43,6 +51,13 @@ namespace MindHub.API.Controllers
         public async Task<ActionResult<MapDto>> Create([FromBody] MapDto entity)
         {
             var mapDto = await _mapService.CreateAsync(entity);
+
+            foreach(var node in mapDto.Nodes)
+            {
+                await _nodeService.EnableAsync(node.Id);
+                if(node.StyleId != null)
+                    await _styleService.EnableAsync(node.StyleId ?? 0);
+            }
             return Ok(mapDto);
         }
 

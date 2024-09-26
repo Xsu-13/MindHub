@@ -134,5 +134,13 @@ namespace MindHub.Services.BaseServices
             await _repository.UpdateAsync(entity);
             await _repository.Context.SaveChangesAsync();
         }
+
+        public async Task EnableAsync(int id)
+        {
+            var entity = await _repository.FetchAsync(id);
+            entity.RecordStatus = RecordStatus.Active;
+            await _repository.UpdateAsync(entity);
+            await _repository.Context.SaveChangesAsync();
+        }
     }
 }

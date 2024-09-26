@@ -22,5 +22,6 @@ namespace MindHub.Services.BaseServices
         Task DeleteAsync(TDto dto);
         Task RestoreAsync(int fileId);
         Task DisableAsync(int id);
+        Task EnableAsync(int id);
     }
 }

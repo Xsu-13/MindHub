@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using MindHub.DAL;
 using MindHub.DAL.Repositories;
 using MindHub.Services.BaseServices;
@@ -13,19 +14,21 @@ namespace MindHub.Services.Nodes
 {
     public class NodeService : ServiceBase<Node, NodeDto>, INodeService
     {
-        private readonly IRepository<Node> _repository;
-        private readonly IService<Node> _service;
-
         public NodeService(
             IRepository<Node> repository,
             IMapper mapper
             ) : base(repository, mapper)
         {
-            _repository = repository;
+        }
+        protected override IQueryable<Node> GetQueryCore()
+        {
+            return base.GetQueryCore()
+                .Include(f => f.Style);
         }
         public async Task<List<NodeDto>> GetByMapId(int mapId)
         {
             var nodes = _repository.GetQuery()
+                .Include(f => f.Style)
                 .Where(x => x.MapId == mapId)
                 .ToList();
 

@@ -28,6 +28,12 @@ function MapList() {
             {
                 Title: "Start",
                 Content: "",
+                Style: {
+                    BackgroundColor: "#ff5252",
+                    TextColor: "#353535",
+                    BorderColor: "#C94A46",
+                    FontFamily: "Sans"
+                },
                 X: 0,
                 Y: 0
             }
@@ -41,12 +47,8 @@ function MapList() {
     };
 
     const handleEmptyMapClick = async () => {
-        await AddMap(defaultMap);
-        navigate('/map');
-    };
-
-    const handleRowClick = (item) => {
-        //navigate('/map');
+        var newMap = await AddMap(defaultMap);
+        navigate('/map', { state: { mapId: newMap.data.id } });
     };
 
     const handleRightClick = (e, item) => {
@@ -77,7 +79,7 @@ function MapList() {
             setIsMenuOpen(false);
           }
           else if (option === 'Открыть') {
-            navigate('/map');
+            navigate('/map', { state: { mapId: selectedMap.id } });
           } 
           else if (option === 'Переместить в корзину') {
             await DeleteMap(selectedMap.id);
@@ -173,7 +175,7 @@ function MapList() {
                         </thead>
                         <tbody>
                         {maps.map((item, index) => (
-                                    <tr key={index} onClick={() => handleRowClick(item)} onContextMenu={(e) => handleRightClick(e, item)}>
+                                    <tr key={index} onContextMenu={(e) => handleRightClick(e, item)}>
                                         <td>{isRenaming && selectedMap.id === item.id ? (
                                             <input
                                             type="text"

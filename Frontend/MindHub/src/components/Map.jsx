@@ -1,13 +1,36 @@
-import { createElement, useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { elementTools, dia, shapes } from '@joint/core';
+import { useLocation } from 'react-router-dom';
 import "../styles/MapStyle.css";
+import { CreateNode, PatchNode, DeleteNode, GetNodesByMapId } from '../services/urls.js';
 
 function Map() {
   const paperRef = useRef(null);
+  const location = useLocation();
   const [editingNode, setEditingNode] = useState(null);
   const [inputValue, setInputValue] = useState('');
+  const [nodes, setNodes] = useState([]);
+
+  const mapId = location.state?.mapId;
 
   useEffect(() => {
+    const GetNodes = async (mapId) => {
+      const nodesData = await GetNodesByMapId(mapId);
+      if (Array.isArray(nodesData.data)) {
+        setNodes(nodesData.data);
+      } else {
+        console.error('Полученные данные не являются массивом:', nodesData.data);
+        setNodes([]);
+      }
+    };
+
+    if (mapId) {
+      GetNodes(mapId);
+    }
+  }, [mapId]); 
+
+  useEffect(() => {
+
     const namespace = shapes;
 
     const graph = new dia.Graph({}, { cellNamespace: namespace });
@@ -30,7 +53,7 @@ function Map() {
           selector: 'button',
           attributes: {
             'r': 7,
-            'fill': '#FF0000', // Red fill for the button
+            'fill': '#FF0000',
             'cursor': 'pointer'
           }
         }, {
@@ -39,11 +62,11 @@ function Map() {
           attributes: {
             'text-anchor': 'middle',
             'y': '0.3em',
-            'fill': '#FFFFFF', // White plus icon color
+            'fill': '#FFFFFF',
             'font-size': 14,
             'pointer-events': 'none'
           },
-          textContent: '+' // Plus sign
+          textContent: '+'
         }],
         x: '100%',
         y: '100%',
@@ -53,16 +76,13 @@ function Map() {
         },
         rotate: true,
         action: function (evt) {
-          //alert('Clicked on: ' + this.model.id);
           const currentElement = this.model;
           const position = currentElement.position();
-          const newX = position.x + 250; // Position the new element to the right
-          const newY = position.y + 50;  // Adjust Y if necessary
+          const newX = position.x + 250;
+          const newY = position.y + 50;  
 
-          // Create a new rectangle element
           const newRect = CreateElement("New Node", graph, {x:newX, y:newY});
 
-          // Create a link between the current element and the new one
           const newLink = new shapes.standard.Link();
           newLink.source(currentElement);
           newLink.target(newRect);
@@ -74,7 +94,6 @@ function Map() {
     elementTools.Resize = elementTools.Button.extend({
       name: 'resize',
       options: {
-        // Define the markup for the resize tool
         markup: [{
           tagName: 'rect',
           selector: 'background',
@@ -94,10 +113,9 @@ function Map() {
             'cursor': 'nwse-resize'
           }
         }],
-        // Define the size and position of the resize tool
+
         size: { width: 10, height: 10 },
         position: { x: '100%', y: '100%', offset: { x: -5, y: -5 } },
-        // Define the resize behavior
         action: function(evt, x, y) {
           const element = this.model;
           const boundingBox = element.getBBox();
@@ -114,14 +132,14 @@ function Map() {
       x: '100%',
       y: '50%',
       offset: { x: 10, y: 0 },
-      graph: graph // Adjust positioning for the button on the right
+      graph: graph
     });
 
     var plusButtonBottom = new elementTools.PlusButton({
       x: '50%',
       y: '100%',
       offset: { x: 0, y: 10 },
-      graph: graph // Adjust positioning for the button at the bottom
+      graph: graph
     });
 
     var resizeButton = new elementTools.Resize();
@@ -129,10 +147,12 @@ function Map() {
     var toolsView = new dia.ToolsView({
       tools: [
         plusButton,
-        plusButtonBottom, // Adding a second button for the bottom position
+        plusButtonBottom,
         //resizeButton
       ]
     });
+
+    nodes.forEach((node) => CreateElement(node.title, graph, {x: node.x, y: node.y}, node.style == null ? "#FFFFFF" : node.style.backgroundColor));
 
     var rect1 = CreateElement("Hello", graph, {x:window.innerWidth/2 - 50, y:window.innerHeight/2 - 50}, "#ff5252")
     var rect2 = CreateElement("World", graph, {x:300, y:300})
@@ -149,18 +169,16 @@ function Map() {
 
     paper.on('element:pointerdblclick', function (elementView) {
       console.log(elementView)
-      // Показать ввод для редактирования
+
       setEditingNode(elementView.model);
       setInputValue(elementView.model.attr('label/text'));
   });
-  }, []);
+  }, [nodes]);
 
-   // Handle input change
    const handleInputChange = (event) => {
     setInputValue(event.target.value);
   };
 
-  // Handle input blur
   const handleInputBlur = () => {
     if (editingNode) {
       editingNode.attr('label', { text: inputValue });
@@ -178,7 +196,7 @@ function Map() {
       }
     }
   };
-  // Create an input element for editing
+
   const inputStyle = {
     position: 'absolute',
     zIndex: 1000,
