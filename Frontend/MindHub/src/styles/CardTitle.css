@@ -1,0 +1,36 @@
+.card_title {
+    margin: 10px;
+    color: #FFF;
+    text-align: center;
+    display: flex; /* Flexbox для выравнивания */
+    justify-content: space-between; /* Равномерное распределение пространства */
+    align-items: center; /* Центрирование по вертикали */
+}
+
+.card_name{
+    width: 80%;
+}
+
+.burger_menu {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%; /* Сделать кнопку круглой */
+    background-color: #333; /* Цвет фона */
+    color: #fff; /* Цвет текста (иконки) */
+    border: none; /* Убираем границу */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer; /* Изменение курсора при наведении */
+}
+
+.burger_menu:hover {
+    background-color: #555; /* Цвет фона при наведении */
+}
+
+.button_content {
+    display: flex;
+    justify-content: flex-end; /* Разместить кнопку справа */
+    align-items: center;
+    margin-left: auto; /* Чтобы кнопка оказалась в конце блока */
+}

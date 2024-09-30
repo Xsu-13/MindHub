@@ -2,7 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { dia, shapes } from '@joint/core';
 import "../styles/MapStyle.css";
 import { createRoot } from 'react-dom/client';
-import EditableCodeBlock from './EditableCodeBlock'; // Ваш компонент
+import EditableCodeBlock from './EditableCodeBlock';
+import CardContent from './CardContent';
 
 
 
@@ -54,26 +55,35 @@ const MyJointJSComponent = () => {
     gridSize: 10,
   });
 
-const node = new Card(); // Правильное использование типа узла
+const node = new Card();
     node.position(100, 30);
     node.resize(300, 200);
     node.addTo(graph);
 
-    // Находим элемент foreignObject для рендеринга
-    const nodeElement = paper.findViewByModel(node).el;
-    const foreignObject = nodeElement.querySelector('foreignObject');
+    const rect1 = new Card();
+    rect1.position(300, 300);
+    rect1.resize(200, 200);
+    rect1.addTo(graph);
 
-    // Создание контейнера для React компонента
-    const container = document.createElement('div');
-    container.style.width = '100%';
-    container.style.height = '100%';
+    rect1.attr('body', { stroke: '#C94A46', fill: "#353535", rx: 2, ry: 2 });
+    rect1.attr('label', { text: "Hey", fill: '#FFFFFF' });
 
-    // Рендеринг вашего компонента внутри созданного контейнера
-    const root = createRoot(container);
-    root.render(<EditableCodeBlock />);
+   let nodeElement = paper.findViewByModel(rect1).el;
+   let foreignObject = nodeElement.querySelector('foreignObject');
 
-    // Добавляем контейнер в foreignObject
-    foreignObject.appendChild(container);
+    let nameContainer = document.createElement('div');
+    let root1 = createRoot(nameContainer);
+    root1.render(<CardContent />);
+
+    foreignObject.appendChild(nameContainer);
+
+    const resizeObserver = new ResizeObserver(() => {
+      const { width, height } = nameContainer.getBoundingClientRect();
+      // Изменяем размер узла в зависимости от содержимого
+      rect1.resize(width + 12, height + 40); // +12 для отступов
+    });
+
+    resizeObserver.observe(nameContainer);
   }, []);
 
   return <div id="my-paper" />;
