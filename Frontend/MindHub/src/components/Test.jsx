@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import { dia, shapes } from '@joint/core';
 import "../styles/MapStyle.css";
 import { createRoot } from 'react-dom/client';
-import EditableCodeBlock from './EditableCodeBlock';
 import CardContent from './CardContent';
 
 
@@ -65,22 +64,19 @@ const node = new Card();
     rect1.resize(200, 200);
     rect1.addTo(graph);
 
-    rect1.attr('body', { stroke: '#C94A46', fill: "#353535", rx: 2, ry: 2 });
-    rect1.attr('label', { text: "Hey", fill: '#FFFFFF' });
-
    let nodeElement = paper.findViewByModel(rect1).el;
    let foreignObject = nodeElement.querySelector('foreignObject');
 
     let nameContainer = document.createElement('div');
     let root1 = createRoot(nameContainer);
-    root1.render(<CardContent />);
+    root1.render(<CardContent initialName="Hey" />);
 
     foreignObject.appendChild(nameContainer);
 
     const resizeObserver = new ResizeObserver(() => {
       const { width, height } = nameContainer.getBoundingClientRect();
       // Изменяем размер узла в зависимости от содержимого
-      rect1.resize(width + 12, height + 40); // +12 для отступов
+      rect1.resize(width + 12, height + 40);
     });
 
     resizeObserver.observe(nameContainer);

@@ -1,8 +1,44 @@
 import { useEffect, useState, useRef } from 'react';
 import { elementTools, dia, shapes } from '@joint/core';
 import { useLocation } from 'react-router-dom';
+import { createRoot } from 'react-dom/client';
 import "../styles/MapStyle.css";
+import CardContent from './CardContent';
 import { CreateNode, PatchNode, DeleteNode, GetNodesByMapId } from '../services/urls.js';
+
+const Card = dia.Element.define('example.ForeignObject', {
+  attrs: {
+      body: {
+          width: 'calc(w)',
+          height: 'calc(h)',
+          fill: {
+              type: 'linearGradient',
+              stops: [
+                  { offset: 0, color: '#ff5c69' },
+                  { offset: 0.5, color: '#ff4252' },
+                  { offset: 1, color: '#ed2637' }
+              ]
+          }
+      },
+      foreignObject: {
+          width: 'calc(w-12)',
+          height: 'calc(h-12)',
+          x: 6,
+          y: 6
+      }
+  },
+}, {
+  markup: [
+      {
+          tagName: 'rect',
+          selector: 'body'
+      },
+      {
+          tagName: 'foreignObject',
+          selector: 'foreignObject'
+      }
+  ]
+});
 
 function Map() {
   const paperRef = useRef(null);
@@ -10,6 +46,7 @@ function Map() {
   const [editingNode, setEditingNode] = useState(null);
   const [inputValue, setInputValue] = useState('');
   const [nodes, setNodes] = useState([]);
+  const paperInstance = useRef(null);
 
   const mapId = location.state?.mapId;
 
@@ -45,6 +82,7 @@ function Map() {
       preventDefaultViewAction: false
     });
 
+    paperInstance.current = paper; 
     const deleteButton = elementTools.Button.extend({
       name: 'delete-button',
       options: {
@@ -135,7 +173,7 @@ function Map() {
             }
           });
 
-          const newRect = CreateElement("New Node", graph, {x:newX, y:newY}, "#FFFFFF", node.data.id);
+          const newRect = CreateElement("New Node", paper, graph, {x:newX, y:newY}, "#FFFFFF", node.data.id);
 
           const newLink = new shapes.standard.Link();
           newLink.source(currentElement);
@@ -165,7 +203,7 @@ function Map() {
 
     const nodeMap = {};
     nodes.forEach((node) => {
-      var newNode = CreateElement(node.title, graph, {x: node.x, y: node.y}, node.style == null ? "#FFFFFF" : node.style.backgroundColor, node.id);
+      var newNode = CreateElement(node.title, paper, graph, {x: node.x, y: node.y}, node.style == null ? "#FFFFFF" : node.style.backgroundColor, node.id);
       nodeMap[node.id] = newNode; 
   });
 
@@ -224,7 +262,12 @@ function Map() {
   const handleInputKeyDown = async (event) => {
     if (event.key === 'Enter') {
       if (editingNode) {
-        editingNode.attr('label', { text: inputValue });
+        const elementView = paperInstance.current.findViewByModel(editingNode);
+
+        if (elementView) {
+          const cardNameElement = elementView.el.querySelector('.card_name');
+          cardNameElement.innerHTML = inputValue;
+        }
         setEditingNode(null);
         setInputValue('');
 
@@ -259,15 +302,32 @@ function Map() {
 }
 
 
-function CreateElement(innertext, graph, position, backgroundColor = "#FFFFFF", nodeId)
+function CreateElement(innertext, paper, graph, position, backgroundColor = "#FFFFFF", nodeId)
 {
-  const rect1 = new shapes.standard.Rectangle();
+  const rect1 = new Card();
   rect1.position(position.x, position.y);
   rect1.resize(180, 50);
   rect1.addTo(graph);
 
   rect1.attr('body', { stroke: '#C94A46', fill: backgroundColor, rx: 2, ry: 2 });
   rect1.attr('label', { text: innertext, fill: '#353535' });
+
+  let nodeElement = paper.findViewByModel(rect1).el;
+   let foreignObject = nodeElement.querySelector('foreignObject');
+
+    let nameContainer = document.createElement('div');
+    let root1 = createRoot(nameContainer);
+    root1.render(<CardContent initialName={innertext} />);
+
+    foreignObject.appendChild(nameContainer);
+
+    const resizeObserver = new ResizeObserver(() => {
+      const { width, height } = nameContainer.getBoundingClientRect();
+      // Изменяем размер узла в зависимости от содержимого
+      rect1.resize(width + 12, height + 40);
+    });
+
+    resizeObserver.observe(nameContainer);
 
   if(nodeId)
   {

@@ -6,20 +6,27 @@ export default function EditableCodeBlock({ initialCode = '', onCodeChange }) {
     const [code, setCode] = React.useState(initialCode);
 
     useEffect(() => {
-        setCode(initialCode); // Обновление состояния при изменении начального кода
+        setCode(initialCode);
     }, [initialCode]);
 
     const handleChange = (evn) => {
         setCode(evn.target.value);
         if (onCodeChange) {
-            onCodeChange(evn.target.value); // Вызов функции для обновления кода
+            onCodeChange(evn.target.value);
         }
+
+        autoResize(evn.target);
     };
 
-    // Focus the editor when the component mounts
+    const autoResize = (textarea) => {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    };
+
     useEffect(() => {
         if (textRef.current) {
             textRef.current.focus();
+            autoResize(textRef.current);
         }
     }, []);
 
@@ -37,8 +44,10 @@ export default function EditableCodeBlock({ initialCode = '', onCodeChange }) {
                     "IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
                 fontSize: 14,
                 marginBottom: 20,
-                width: '100%', // Ensure it takes full width
-                height: '100%', // Ensure it takes full height
+                width: '100%',
+                resize: 'none',
+                overflow: 'hidden',
+                minHeight: '100px', 
             }}
         />
     );

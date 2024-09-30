@@ -1,19 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/CardTitle.css';
 import EditableCodeBlock from './EditableCodeBlock';
 
-function CardContent() {
-    const [isCodeBlockVisible, setIsCodeBlockVisible] = useState(false); // Состояние для видимости
+export default function CardContent({initialName = ''}) {
+    const [isCodeBlockVisible, setIsCodeBlockVisible] = useState(false);
+    const [name, setName] = React.useState(initialName);
+
+    useEffect(() => {
+        setName(initialName);
+    }, [initialName]);
 
     const toggleCodeBlock = () => {
-        setIsCodeBlockVisible(!isCodeBlockVisible); // Переключаем видимость
+        setIsCodeBlockVisible(!isCodeBlockVisible);
     };
 
     return (
         <>
             <div className='card_title'>
                 <div className='card_name'>
-                    Hello
+                    {name}
                 </div>
                 <div className='button_content'>
                     <button className="burger_menu" onClick={toggleCodeBlock}>
@@ -22,9 +27,7 @@ function CardContent() {
                 </div>
             </div>
             
-            {isCodeBlockVisible && <EditableCodeBlock />} {/* Отображаем компонент при true */}
+            {isCodeBlockVisible && <EditableCodeBlock />}
         </>
     );
 }
-
-export default CardContent;
