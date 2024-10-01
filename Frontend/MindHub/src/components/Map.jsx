@@ -203,7 +203,7 @@ function Map() {
 
     const nodeMap = {};
     nodes.forEach((node) => {
-      var newNode = CreateElement(node.title, paper, graph, {x: node.x, y: node.y}, node.style == null ? "#FFFFFF" : node.style.backgroundColor, node.id);
+      var newNode = CreateElement(node.title, paper, graph, {x: node.x, y: node.y}, node.style == null ? "#FFFFFF" : node.style.backgroundColor, node.id, node.content);
       nodeMap[node.id] = newNode; 
   });
 
@@ -240,8 +240,6 @@ function Map() {
     });
 
     paper.on('element:pointerdblclick', function (elementView) {
-      console.log(elementView)
-
       setEditingNode(elementView.model);
       setInputValue(elementView.model.attr('label/text'));
   });
@@ -302,7 +300,7 @@ function Map() {
 }
 
 
-function CreateElement(innertext, paper, graph, position, backgroundColor = "#FFFFFF", nodeId)
+function CreateElement(innertext, paper, graph, position, backgroundColor = "#FFFFFF", nodeId, initialCode = '')
 {
   const rect1 = new Card();
   rect1.position(position.x, position.y);
@@ -317,7 +315,7 @@ function CreateElement(innertext, paper, graph, position, backgroundColor = "#FF
 
     let nameContainer = document.createElement('div');
     let root1 = createRoot(nameContainer);
-    root1.render(<CardContent initialName={innertext} />);
+    root1.render(<CardContent initialName={innertext} initialCode={initialCode} initCardId={nodeId}/>);
 
     foreignObject.appendChild(nameContainer);
 
