@@ -47,7 +47,8 @@ export default function EditableCodeBlock({ initialCode = '', onCodeChange }) {
                 width: '100%',
                 resize: 'none',
                 overflow: 'hidden',
-                minHeight: '100px', 
+                minHeight: '100px',
+                fontFamily: 'inherit'
             }}
         />
     );

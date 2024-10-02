@@ -176,6 +176,7 @@ function Map() {
           const newRect = CreateElement("New Node", paper, graph, {x:newX, y:newY}, "#FFFFFF", node.data.id);
 
           const newLink = new shapes.standard.Link();
+          newLink.set('z', 0);
           newLink.source(currentElement);
           newLink.target(newRect);
           newLink.addTo(graph);
@@ -213,6 +214,7 @@ function Map() {
       const currentNode = nodeMap[node.id];
       if (parentNode && currentNode) {
         const newLink = new shapes.standard.Link();
+        newLink.set('z', 0);
         newLink.source(parentNode);
         newLink.target(currentNode);
         newLink.addTo(graph);
@@ -261,6 +263,7 @@ function Map() {
     if (event.key === 'Enter') {
       if (editingNode) {
         const elementView = paperInstance.current.findViewByModel(editingNode);
+        editingNode.attr('label', { text: inputValue });
 
         if (elementView) {
           const cardNameElement = elementView.el.querySelector('.card_name');
@@ -285,9 +288,10 @@ function Map() {
     <>
       <div id="paper" ref={paperRef}></div>
       {editingNode && (
-          <input
+          <textarea
             type="text"
-            style={{ ...inputStyle, width: 150, top: editingNode.position().y + 10, left: editingNode.position().x + 10}}
+            className='node_input'
+            style={{ ...inputStyle, width: 150, top: editingNode.position().y + 20, left: editingNode.position().x + 20}}
             value={inputValue}
             onChange={handleInputChange}
             onBlur={handleInputBlur}
@@ -302,36 +306,36 @@ function Map() {
 
 function CreateElement(innertext, paper, graph, position, backgroundColor = "#FFFFFF", nodeId, initialCode = '')
 {
-  const rect1 = new Card();
-  rect1.position(position.x, position.y);
-  rect1.resize(180, 50);
-  rect1.addTo(graph);
+  const node = new Card();
+  node.position(position.x, position.y);
+  node.resize(180, 50);
+  node.addTo(graph);
 
-  rect1.attr('body', { stroke: '#C94A46', fill: backgroundColor, rx: 2, ry: 2 });
-  rect1.attr('label', { text: innertext, fill: '#353535' });
+  node.attr('body', { stroke: '#C94A46', fill: backgroundColor, rx: 2, ry: 2 });
+  node.attr('label', { text: innertext, fill: '#353535' });
+  node.set('z', 1);
 
-  let nodeElement = paper.findViewByModel(rect1).el;
+  let nodeElement = paper.findViewByModel(node).el;
    let foreignObject = nodeElement.querySelector('foreignObject');
 
     let nameContainer = document.createElement('div');
-    let root1 = createRoot(nameContainer);
-    root1.render(<CardContent initialName={innertext} initialCode={initialCode} initCardId={nodeId}/>);
+    let root = createRoot(nameContainer);
+    root.render(<CardContent initialName={innertext} initialCode={initialCode} initCardId={nodeId}/>);
 
     foreignObject.appendChild(nameContainer);
 
     const resizeObserver = new ResizeObserver(() => {
       const { width, height } = nameContainer.getBoundingClientRect();
-      // Изменяем размер узла в зависимости от содержимого
-      rect1.resize(width + 12, height + 40);
+      node.resize(width + 12, height + 40);
     });
 
     resizeObserver.observe(nameContainer);
 
   if(nodeId)
   {
-    rect1.backId = nodeId;
+    node.backId = nodeId;
   }
-  return rect1;
+  return node;
 }
 
 export default Map;

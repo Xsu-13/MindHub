@@ -140,6 +140,13 @@ header h1 {
   }
   
   .context-menu li:hover {
-    background-color: #f5f5f5;
+    background-color: #4d4d4d55;
   }
   
+  .context-menu li:last-child{
+    background-color: #ff000097;
+  }
+
+  .context-menu li:last-child:hover{
+    background-color: #ff0000a5;
+  }

@@ -34,8 +34,8 @@ function MapList() {
                     BorderColor: "#C94A46",
                     FontFamily: "Sans"
                 },
-                X: 0,
-                Y: 0
+                X: window.innerWidth/2 - 100,
+                Y: window.innerHeight/2 - 100
             }
         ]
     };
@@ -175,14 +175,14 @@ function MapList() {
                         </thead>
                         <tbody>
                         {maps.map((item, index) => (
-                                    <tr key={index} onContextMenu={(e) => handleRightClick(e, item)}>
+                                    <tr key={index} onDoubleClick={(e) => navigate('/map', { state: { mapId: item.id } })} onContextMenu={(e) => handleRightClick(e, item)}>
                                         <td>{isRenaming && selectedMap.id === item.id ? (
                                             <input
                                             type="text"
                                             value={newTitle}
                                             onChange={(e) => setNewTitle(e.target.value)}
                                             onKeyDown={(e) => {
-                                                if (e.key === 'Enter') handleRename(item.id, e.target.value); // Переименовать при нажатии Enter
+                                                if (e.key === 'Enter') handleRename(item.id, e.target.value); 
                                             }}
                                             autoFocus
                                             />
@@ -200,10 +200,10 @@ function MapList() {
                                 ref={menuRef}
                                 style={{ top: menuPosition.y, left: menuPosition.x }}>
                                 <li onClick={() => handleOptionClick('Открыть')}>Открыть</li>
+                                <li onClick={() => handleOptionClick('Переименовать')}>Переименовать</li>
                                 <li onClick={() => handleOptionClick('Переместить в корзину')}>
                                 Переместить в корзину
                                 </li>
-                                <li onClick={() => handleOptionClick('Переименовать')}>Переименовать</li>
                             </ul>
                             )}
                 </section>

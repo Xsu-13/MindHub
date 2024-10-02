@@ -9,6 +9,7 @@
 
 .card_name{
     width: 80%;
+    word-wrap: break-word;
 }
 
 .burger_menu {
