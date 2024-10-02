@@ -185,23 +185,6 @@ function Map() {
       }
     });
 
-    var plusButton = new elementTools.PlusButton({
-      x: '100%',
-      y: '50%',
-      offset: { x: 10, y: 0 },
-      graph: graph
-    });
-
-    const deleteButtonTool = new deleteButton();
-
-    var toolsView = new dia.ToolsView({
-      tools: [
-        plusButton,
-        deleteButtonTool
-        //resizeButton
-      ]
-    });
-
     const nodeMap = {};
     nodes.forEach((node) => {
       var newNode = CreateElement(node.title, paper, graph, {x: node.x, y: node.y}, node.style == null ? "#FFFFFF" : node.style.backgroundColor, node.id, node.content);
@@ -236,9 +219,35 @@ function Map() {
     }
   });
 
+  let currentElementView = null;
+
+  var plusButton = new elementTools.PlusButton({
+    x: '100%',
+    y: '50%',
+    offset: { x: 10, y: 0 },
+    graph: graph
+  });
+  const deleteButtonTool = new deleteButton();
+
     paper.on('element:pointerclick', function (elementView) {
-      elementView.addTools(toolsView);
-      //elementView.addTools(new elementTools.Control());
+      if (currentElementView && currentElementView !== elementView) {
+        currentElementView.removeTools();
+    }
+      const links = graph.getLinks(); 
+      elementView.addTools(new dia.ToolsView({
+        tools: [
+          plusButton
+        ]
+      }));
+      if(links.some(link => link.getTargetElement() === elementView.model))
+        elementView.addTools(new dia.ToolsView({
+          tools: [
+            deleteButtonTool,
+            plusButton
+          ]
+        }));
+
+        currentElementView = elementView;
     });
 
     paper.on('element:pointerdblclick', function (elementView) {
