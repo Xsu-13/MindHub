@@ -17,6 +17,18 @@ tr {
     background-color: #ededed9a;
 }
 
+header{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.logout{
+    align-self: center;
+    width: 10%;
+    height: 5%;
+}
+
 header h1 {
     text-align: end;
     margin-bottom: 30px;

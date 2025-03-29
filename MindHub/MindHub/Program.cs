@@ -3,8 +3,8 @@ using Autofac.Extensions.DependencyInjection;
 using MindHub.API.Middlewares;
 using MindHub.DAL;
 using MindHub.Services;
-using MindHub.DAL;
 using MindHub.Services.Users;
+using MindHub.API.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -39,6 +39,8 @@ services.AddCors(options =>
     });
 });
 
+services.AddSignalR();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -51,11 +53,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
-
+    
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+app.MapHub<LiveHub>("/liveHub");
 
 app.MapControllers();
+
 
 app.Run();

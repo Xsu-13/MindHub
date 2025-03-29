@@ -3,6 +3,8 @@ import Map from './Map.jsx'
 import MapList from './MapList.jsx'
 import Login from './LoginForm.jsx'
 import EditableCodeBlock from './EditableCodeBlock.jsx'
+import RealTimeEditing from './RealTimeEditing.jsx';
+import MouseTracker from './MouseTracker.jsx';
 
 function App() {
 
@@ -13,6 +15,7 @@ function App() {
         <Route path="/map" element={<Map />} />
         <Route path="/login" element={<Login />} />
         <Route path="/code" element={<EditableCodeBlock />} />
+        <Route path="/realtime" element={<MouseTracker />} />
       </Routes>
     </Router>
   )

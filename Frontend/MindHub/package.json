@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@joint/core": "^4.0.4",
+    "@microsoft/signalr": "^8.0.7",
     "@uiw/react-textarea-code-editor": "^3.0.2",
     "axios": "^1.7.7",
     "react": "^18.3.1",

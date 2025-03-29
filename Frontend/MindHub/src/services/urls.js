@@ -15,8 +15,6 @@ export const LoginUser = async (email, password) => {
 
 export const SignUpUser = async (username, email, password) => {
     var status = await fetchSignUp(username, email, password) ?? "Что-то пошло не так."
-    // var user = status.data.user;
-    // localStorage.setItem("user", JSON.stringify(user));
     return user; 
 }
 
@@ -33,6 +31,16 @@ export const fetchLogin = async (email, password) => {
 export const fetchSignUp = async (username, email, password) => {
     try{
         return await axios.post(domen+"/api/users/signup", {username: username, email: email, password: password})
+    }
+    catch(e)
+    {
+        console.log(e);
+    }
+}
+
+export const fetchLogout = async () => {
+    try{
+        return await axios.post(domen+"/api/users/logout")
     }
     catch(e)
     {

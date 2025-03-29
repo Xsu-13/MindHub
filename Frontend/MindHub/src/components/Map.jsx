@@ -5,6 +5,8 @@ import { createRoot } from 'react-dom/client';
 import "../styles/MapStyle.css";
 import CardContent from './CardContent';
 import { CreateNode, PatchNode, DeleteNode, GetNodesByMapId } from '../services/urls.js';
+import MouseTracker from './MouseTracker.jsx';
+import { useMindMapLock } from './useMindMapLock';
 
 const Card = dia.Element.define('example.ForeignObject', {
   attrs: {
@@ -296,6 +298,7 @@ function Map() {
   return (
     <>
       <div id="paper" ref={paperRef}></div>
+      <MouseTracker></MouseTracker>
       {editingNode && (
           <textarea
             type="text"

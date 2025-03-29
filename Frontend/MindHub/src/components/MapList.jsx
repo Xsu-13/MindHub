@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/MapListStyle.css';
 import LoginForm from "./LoginForm.jsx"
-import { AddMap, PatchMap, DeleteMap, GetMapsByUserId } from '../services/urls.js';
+import { AddMap, PatchMap, DeleteMap, GetMapsByUserId, fetchLogout } from '../services/urls.js';
 
 
 function MapList() {
@@ -45,6 +45,12 @@ function MapList() {
         const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
         return date.toLocaleString('ru-RU', options);
     };
+
+    const handleLogout = async () => {
+        await fetchLogout();
+        localStorage.clear();
+        location.reload();
+    }
 
     const handleEmptyMapClick = async () => {
         var newMap = await AddMap(defaultMap);
@@ -153,6 +159,7 @@ function MapList() {
                 {isAuthenticated ? (
                     <div>
                         <header>
+                            <button className="logout" onClick={handleLogout}>Выйти</button>
                             <h1>Добро пожаловать, {user.username}!</h1>
                         </header>
                     
