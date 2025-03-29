@@ -1,11 +1,28 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { HubConnectionBuilder } from '@microsoft/signalr';
 
-export const useMindMapLock = () => {
+export const useMindMapLock = (nodeMapRef) => {
   const [connection, setConnection] = useState(null);
   const [lockedNodes, setLockedNodes] = useState({});
   const lockedNodesRef = useRef(lockedNodes);
   const [currentUser] = useState(generateUserId());
+
+  const updateNodeStyle = useCallback((nodeId, isLocked) => {
+    if (!nodeMapRef.current) return;
+    
+    const node = nodeMapRef.current[nodeId];
+    if (node) {
+      node.attr({
+        body: {
+          fill: isLocked ? '#f5f5f5' : '#FFFFFF',
+          stroke: isLocked ? '#999' : '#C94A46'
+        },
+        label: {
+          fill: isLocked ? '#999' : '#353535'
+        }
+      });
+    }
+  }, []);
 
   // Синхронизируем ref с состоянием
   useEffect(() => {
@@ -35,6 +52,7 @@ export const useMindMapLock = () => {
     if (!connection) return;
 
     const handler = (nodeId, isLocked, lockedBy) => {
+      updateNodeStyle(nodeId, isLocked);
       setLockedNodes(prev => {
         const newState = isLocked
           ? { ...prev, [nodeId]: lockedBy || '' }

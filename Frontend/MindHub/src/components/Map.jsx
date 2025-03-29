@@ -49,8 +49,10 @@ function Map() {
   const [inputValue, setInputValue] = useState('');
   const [nodes, setNodes] = useState([]);
   const paperInstance = useRef(null);
+  const nodesMap = useRef({});
 
   const mapId = location.state?.mapId;
+
   const { 
     requestLock, 
     releaseLock, 
@@ -58,7 +60,7 @@ function Map() {
     getLockedNodes,
     lockedNodes, 
     currentUser
-  } = useMindMapLock();
+  } = useMindMapLock(nodesMap);
 
   useEffect(() => {
     const GetNodes = async (mapId) => {
@@ -263,13 +265,9 @@ function Map() {
     paper.on('element:pointerdblclick', async function (elementView) {
       let canEdit = await canEditNode(elementView.model.backId)
       if(canEdit){
-        alert("получилось")
         setEditingNode(elementView.model);
         setInputValue(elementView.model.attr('label/text'));
         await requestLock(elementView.model.backId);
-      }
-      else{
-        alert("не получилось")
       }
 
   });
@@ -312,36 +310,17 @@ function Map() {
     backgroundColor: '#fff'
   };
 
-  return (
-    <>
-      <div id="paper" ref={paperRef}></div>
-      <MouseTracker></MouseTracker>
-      <useMindMapLock></useMindMapLock>
-      {editingNode && (
-          <textarea
-            type="text"
-            className='node_input'
-            style={{ ...inputStyle, width: 150, top: editingNode.position().y + 20, left: editingNode.position().x + 20}}
-            value={inputValue}
-            onChange={handleInputChange}
-            onBlur={handleInputBlur}
-            onKeyDown={handleInputKeyDown}
-            autoFocus
-          />
-        )}
-    </>
-  )
-}
-
-
-function CreateElement(innertext, paper, graph, position, backgroundColor = "#FFFFFF", nodeId, initialCode = '')
+  function CreateElement(innertext, paper, graph, position, backgroundColor = "#FFFFFF", nodeId, initialCode = '', isLocked = false)
 {
   const node = new Card();
   node.position(position.x, position.y);
   node.resize(180, 50);
   node.addTo(graph);
 
-  node.attr('body', { stroke: '#C94A46', fill: backgroundColor, rx: 2, ry: 2 });
+  node.attr('body', {
+    stroke: isLocked ? '#999' : '#C94A46',
+    fill: isLocked ? '#f5f5f5' : backgroundColor
+  });
   node.attr('label', { text: innertext, fill: '#353535' });
   node.set('z', 1);
 
@@ -364,8 +343,31 @@ function CreateElement(innertext, paper, graph, position, backgroundColor = "#FF
   if(nodeId)
   {
     node.backId = nodeId;
+    //nodesMap[backId] = node;
+    nodesMap.current[nodeId] = node;
   }
   return node;
+}
+
+  return (
+    <>
+      <div id="paper" ref={paperRef}></div>
+      <MouseTracker></MouseTracker>
+      <useMindMapLock></useMindMapLock>
+      {editingNode && (
+          <textarea
+            type="text"
+            className='node_input'
+            style={{ ...inputStyle, width: 150, top: editingNode.position().y + 20, left: editingNode.position().x + 20}}
+            value={inputValue}
+            onChange={handleInputChange}
+            onBlur={handleInputBlur}
+            onKeyDown={handleInputKeyDown}
+            autoFocus
+          />
+        )}
+    </>
+  )
 }
 
 export default Map;
