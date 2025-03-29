@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import * as signalR from "@microsoft/signalr";
+import { HubConnectionBuilder } from '@microsoft/signalr';
 
 const MouseTracker = () => {
     const [connection, setConnection] = useState(null);
     const [remoteCursors, setRemoteCursors] = useState({});
 
     useEffect(() => {
-        const newConnection = new signalR.HubConnectionBuilder()
+        const newConnection = new HubConnectionBuilder()
             .withUrl("https://localhost:5001/liveHub")
             .withAutomaticReconnect()
             .build();

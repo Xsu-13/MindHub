@@ -39,7 +39,10 @@ services.AddCors(options =>
     });
 });
 
-services.AddSignalR();
+services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+});
 
 var app = builder.Build();
 

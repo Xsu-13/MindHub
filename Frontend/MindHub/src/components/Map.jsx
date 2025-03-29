@@ -6,7 +6,7 @@ import "../styles/MapStyle.css";
 import CardContent from './CardContent';
 import { CreateNode, PatchNode, DeleteNode, GetNodesByMapId } from '../services/urls.js';
 import MouseTracker from './MouseTracker.jsx';
-import { useMindMapLock } from './useMindMapLock';
+import { useMindMapLock } from './useMindMapLock.jsx';
 
 const Card = dia.Element.define('example.ForeignObject', {
   attrs: {
@@ -51,6 +51,14 @@ function Map() {
   const paperInstance = useRef(null);
 
   const mapId = location.state?.mapId;
+  const { 
+    requestLock, 
+    releaseLock, 
+    canEditNode,
+    getLockedNodes,
+    lockedNodes, 
+    currentUser
+  } = useMindMapLock();
 
   useEffect(() => {
     const GetNodes = async (mapId) => {
@@ -252,9 +260,18 @@ function Map() {
         currentElementView = elementView;
     });
 
-    paper.on('element:pointerdblclick', function (elementView) {
-      setEditingNode(elementView.model);
-      setInputValue(elementView.model.attr('label/text'));
+    paper.on('element:pointerdblclick', async function (elementView) {
+      let canEdit = await canEditNode(elementView.model.backId)
+      if(canEdit){
+        alert("получилось")
+        setEditingNode(elementView.model);
+        setInputValue(elementView.model.attr('label/text'));
+        await requestLock(elementView.model.backId);
+      }
+      else{
+        alert("не получилось")
+      }
+
   });
   }, [nodes]);
 
@@ -299,6 +316,7 @@ function Map() {
     <>
       <div id="paper" ref={paperRef}></div>
       <MouseTracker></MouseTracker>
+      <useMindMapLock></useMindMapLock>
       {editingNode && (
           <textarea
             type="text"
