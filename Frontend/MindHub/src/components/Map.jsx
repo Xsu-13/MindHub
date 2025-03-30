@@ -242,9 +242,12 @@ function Map() {
   });
   const deleteButtonTool = new deleteButton();
 
-    paper.on('element:pointerclick', function (elementView) {
+    paper.on('element:pointerclick', async function (elementView) {
       if (currentElementView && currentElementView !== elementView) {
         currentElementView.removeTools();
+        setEditingNode(null);
+        await releaseLock(currentElementView.model.backId);
+
     }
       const links = graph.getLinks(); 
       elementView.addTools(new dia.ToolsView({
@@ -296,11 +299,12 @@ function Map() {
           const cardNameElement = elementView.el.querySelector('.card_name');
           cardNameElement.innerHTML = inputValue;
         }
-        setEditingNode(null);
-        setInputValue('');
-
+        
         await releaseLock(editingNode.backId);
         await PatchNode(editingNode.backId, {title: inputValue});
+
+        setEditingNode(null);
+        setInputValue('');
       }
     }
   };
