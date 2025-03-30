@@ -46,6 +46,7 @@ function Map() {
   const paperRef = useRef(null);
   const location = useLocation();
   const [editingNode, setEditingNode] = useState(null);
+  const [lockedNodeId, setLockedNodeId] = useState(null);
   const [inputValue, setInputValue] = useState('');
   const [nodes, setNodes] = useState([]);
   const paperInstance = useRef(null);
@@ -267,9 +268,9 @@ function Map() {
       if(canEdit){
         setEditingNode(elementView.model);
         setInputValue(elementView.model.attr('label/text'));
+
         await requestLock(elementView.model.backId);
       }
-
   });
   }, [nodes]);
 
@@ -277,7 +278,7 @@ function Map() {
     setInputValue(event.target.value);
   };
 
-  const handleInputBlur = () => {
+  const handleInputBlur = async () => {
     if (editingNode) {
       editingNode.attr('label', { text: inputValue });
       setEditingNode(null);
@@ -298,6 +299,7 @@ function Map() {
         setEditingNode(null);
         setInputValue('');
 
+        await releaseLock(editingNode.backId);
         await PatchNode(editingNode.backId, {title: inputValue});
       }
     }
@@ -329,7 +331,7 @@ function Map() {
 
     let nameContainer = document.createElement('div');
     let root = createRoot(nameContainer);
-    root.render(<CardContent initialName={innertext} initialCode={initialCode} initCardId={nodeId}/>);
+    root.render(<CardContent initialName={innertext} initialCode={initialCode} initCardId={nodeId} lockNode={() => requestLock(nodeId)} unlockNode={() => releaseLock(nodeId)}/>);
 
     foreignObject.appendChild(nameContainer);
 
@@ -343,7 +345,6 @@ function Map() {
   if(nodeId)
   {
     node.backId = nodeId;
-    //nodesMap[backId] = node;
     nodesMap.current[nodeId] = node;
   }
   return node;

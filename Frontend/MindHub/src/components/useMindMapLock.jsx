@@ -84,7 +84,7 @@ export const useMindMapLock = (nodeMapRef) => {
   const releaseLock = useCallback(async (nodeId) => {
     if (!connection) return;
     try {
-      await connection.invoke('ReleaseNodeLock', nodeId);
+      await connection.invoke('ReleaseNodeLock', nodeId.toString());
     } catch (error) {
       console.error('Lock release failed:', error);
     }

@@ -3,7 +3,7 @@ import '../styles/CardTitle.css';
 import EditableCodeBlock from './EditableCodeBlock';
 import { PatchNode } from '../services/urls.js';
 
-export default function CardContent({initialName = '', initialCode = '', initCardId = null}) {
+export default function CardContent({initialName = '', initialCode = '', initCardId = null, lockNode=null, unlockNode=null}) {
     const [isCodeBlockVisible, setIsCodeBlockVisible] = useState(false);
     const [name, setName] = React.useState(initialName);
     const [code, setCode] = React.useState(initialCode);
@@ -17,6 +17,10 @@ export default function CardContent({initialName = '', initialCode = '', initCar
 
     const toggleCodeBlock = () => {
         setIsCodeBlockVisible(!isCodeBlockVisible);
+        if(!isCodeBlockVisible)
+            lockNode(initCardId);
+        else
+            unlockNode(initCardId);
     };
 
     async function onCodeChange(code)
