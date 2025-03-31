@@ -171,3 +171,20 @@ export const fetchDeleteNode = async (nodeId) => {
         console.log(e);
     }
 }
+
+//---------------INVITES----------------
+
+export const CreateInvite = async (mapId) => {
+    var nodes = await fetchCreateInvite(mapId) ?? "Что-то пошло не так."
+    return nodes; 
+}
+
+export const fetchCreateInvite = async (mapId) => {
+    try{
+        return await axios.post(domen+"/api/nodes/"+mapId)
+    }
+    catch(e)
+    {
+        console.log(e);
+    }
+}

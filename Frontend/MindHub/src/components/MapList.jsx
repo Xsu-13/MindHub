@@ -86,7 +86,11 @@ function MapList() {
           }
           else if (option === 'Открыть') {
             navigate('/map', { state: { mapId: selectedMap.id } });
-          } 
+          }
+          else if(optipn === "Создать ссылку для приглашения") 
+          {
+            await CreateInvite(selectedMap.id);
+          }
           else if (option === 'Переместить в корзину') {
             await DeleteMap(selectedMap.id);
             const updatedMaps = maps.filter((map) =>
@@ -207,6 +211,9 @@ function MapList() {
                                 ref={menuRef}
                                 style={{ top: menuPosition.y, left: menuPosition.x }}>
                                 <li onClick={() => handleOptionClick('Открыть')}>Открыть</li>
+                                <li onClick={() => handleOptionClick('Создать ссылку для приглашения')}>
+                                Создать ссылку для приглашения
+                                </li>
                                 <li onClick={() => handleOptionClick('Переименовать')}>Переименовать</li>
                                 <li onClick={() => handleOptionClick('Переместить в корзину')}>
                                 Переместить в корзину
