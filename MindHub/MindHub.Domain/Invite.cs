@@ -19,7 +19,7 @@ namespace MindHub.Domain
         public int MapId { get; set; }
         public int InviterId { get; set; }
         public string Token { get; set; }
-        public Map Map { get; set; }
-        public User User { get; set; }
+        public Map? Map { get; set; }
+        public User? Inviter { get; set; }
     }
 }

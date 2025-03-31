@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MindHub.DAL;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MindHub.DAL.Migrations
 {
     [DbContext(typeof(MindHubContext))]
-    partial class MindHubContextModelSnapshot : ModelSnapshot
+    [Migration("20250331143157_AddInvitesNullable")]
+    partial class AddInvitesNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -236,9 +239,10 @@ namespace MindHub.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasKey("Id");
+                    b.Property<int?>("UserId")
+                        .HasColumnType("integer");
 
-                    b.HasIndex("InviterId");
+                    b.HasKey("Id");
 
                     b.HasIndex("MapId");
 
@@ -247,6 +251,8 @@ namespace MindHub.DAL.Migrations
                     b.HasIndex("RecordStatus");
 
                     b.HasIndex("RecordUpdateDate");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Invites");
                 });
@@ -289,21 +295,20 @@ namespace MindHub.DAL.Migrations
 
             modelBuilder.Entity("MindHub.Domain.Invite", b =>
                 {
-                    b.HasOne("MindHub.DAL.User", "Inviter")
-                        .WithMany()
-                        .HasForeignKey("InviterId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("MindHub.DAL.Map", "Map")
                         .WithMany()
                         .HasForeignKey("MapId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Inviter");
+                    b.HasOne("MindHub.DAL.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Map");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MindHub.DAL.Map", b =>

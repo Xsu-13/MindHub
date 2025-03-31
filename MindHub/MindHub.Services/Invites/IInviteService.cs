@@ -10,6 +10,6 @@ namespace MindHub.Services.Invites
 {
     public interface IInviteService : IService<InviteDto>
     {
-        void CreateInvite(InviteDto invite);
+        Task<InviteDto> CreateInvite(int mapId, int userId);
     }
 }

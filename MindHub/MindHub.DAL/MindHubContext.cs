@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using MindHub.Domain;
 using MindHub.Domain.Interfaces;
 using System.Reflection;
 
@@ -20,6 +21,7 @@ namespace MindHub.DAL
         public virtual DbSet<Map> Maps { get; set; }
         public virtual DbSet<Node> Nodes { get; set; }
         public virtual DbSet<Style> Styles { get; set; }
+        public virtual DbSet<Invite> Invites { get; set; }
         #endregion
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

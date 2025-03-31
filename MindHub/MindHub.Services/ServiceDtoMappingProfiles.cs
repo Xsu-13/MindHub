@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using MindHub.DAL;
+using MindHub.Domain;
+using MindHub.Services.Invites;
 using MindHub.Services.Maps;
 using MindHub.Services.Nodes;
 using MindHub.Services.Styles;
@@ -19,6 +21,8 @@ namespace MindHub.Services
             CreateMap<StyleDto, Style>();
             CreateMap<User, UserDto>();
             CreateMap<UserDto, User>();
+            CreateMap<Invite, InviteDto>();
+            CreateMap<InviteDto, Invite>();
         }
     }
 }
