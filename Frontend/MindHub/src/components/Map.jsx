@@ -46,7 +46,6 @@ function Map() {
   const paperRef = useRef(null);
   const location = useLocation();
   const [editingNode, setEditingNode] = useState(null);
-  const [lockedNodeId, setLockedNodeId] = useState(null);
   const [inputValue, setInputValue] = useState('');
   const [nodes, setNodes] = useState([]);
   const paperInstance = useRef(null);
@@ -58,10 +57,11 @@ function Map() {
     requestLock, 
     releaseLock, 
     canEditNode,
+    moveNode,
     getLockedNodes,
     lockedNodes, 
     currentUser
-  } = useMindMapLock(nodesMap);
+  } = useMindMapLock(nodesMap, mapId);
 
   useEffect(() => {
     const GetNodes = async (mapId) => {
@@ -227,6 +227,7 @@ function Map() {
         x: position.x,
         y: position.y
       });
+      await moveNode(mapId, element.backId, position.x, position.y);
     } catch (error) {
       console.error('Ошибка сохранения позиции:', error);
     }
@@ -358,7 +359,6 @@ function Map() {
     <>
       <div id="paper" ref={paperRef}></div>
       <MouseTracker></MouseTracker>
-      <useMindMapLock></useMindMapLock>
       {editingNode && (
           <textarea
             type="text"

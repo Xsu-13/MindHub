@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { HubConnectionBuilder } from '@microsoft/signalr';
 
-export const useMindMapLock = (nodeMapRef) => {
+export const useMindMapLock = (nodeMapRef, mapId) => {
   const [connection, setConnection] = useState(null);
   const [lockedNodes, setLockedNodes] = useState({});
   const lockedNodesRef = useRef(lockedNodes);
@@ -24,6 +24,16 @@ export const useMindMapLock = (nodeMapRef) => {
     }
   }, []);
 
+  const updateNodePosition = useCallback((nodeId, x, y) => {
+    
+    if (!nodeMapRef.current) return;
+    
+    const node = nodeMapRef.current[nodeId];
+    if (node) {
+      node.position(x, y);
+    }
+  }, []);
+
   // Синхронизируем ref с состоянием
   useEffect(() => {
     lockedNodesRef.current = lockedNodes;
@@ -39,8 +49,12 @@ export const useMindMapLock = (nodeMapRef) => {
     setConnection(newConnection);
 
     newConnection.start()
-      .then(() => console.log('Connected to lock hub'))
+      .then(() => {console.log('Connected to lock hub');
+      return newConnection.invoke("SubscribeToMap", mapId.toString())})
       .catch(err => console.error('Connection failed: ', err));
+
+    //await newConnection.invoke("SubscribeToMap", mapId.toString());
+    //await newConnection.invoke("SubscribeToMap", 2);
 
     return () => {
       newConnection.stop();
@@ -61,12 +75,35 @@ export const useMindMapLock = (nodeMapRef) => {
       });
     };
 
+  const positionHandler = (nodeId, x, y) => {
+    updateNodePosition(nodeId, x, y);
+  };
+
     connection.on('ReceiveLockStatus', handler);
+    connection.on('ReceiveNodePosition', positionHandler);
 
     return () => {
       connection.off('ReceiveLockStatus', handler);
+      connection.off('ReceiveNodePosition', positionHandler);
     };
   }, [connection]);
+
+  // Функция для перемещения узла
+const moveNode = useCallback(async (mapId, nodeId, x, y) => {
+  if (!connection) return false;
+  
+  try {
+    // Проверяем, заблокирован ли узел текущим пользователем
+    //if (lockedNodes[nodeId] && lockedNodes[nodeId] === currentUser) {
+      await connection.invoke('UpdateNodePosition', mapId.toString(), nodeId.toString(), x, y);
+      return true;
+    //}
+    //return false;
+  } catch (error) {
+    console.error('Move node failed:', error);
+    return false;
+  }
+}, [connection, lockedNodes, currentUser]);
 
   // Запрос блокировки узла
   const requestLock = useCallback(async (nodeId) => {
@@ -104,6 +141,7 @@ export const useMindMapLock = (nodeMapRef) => {
     requestLock,
     releaseLock,
     canEditNode,
+    moveNode,
     getLockedNodes,
     lockedNodes,
     currentUser
