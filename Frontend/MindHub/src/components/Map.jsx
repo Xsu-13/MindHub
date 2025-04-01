@@ -8,7 +8,7 @@ import { CreateNode, PatchNode, DeleteNode, GetNodesByMapId } from '../services/
 import MouseTracker from './MouseTracker.jsx';
 import { useMindMapLock } from './useMindMapLock.jsx';
 
-const Card = dia.Element.define('example.ForeignObject', {
+export const Card = dia.Element.define('example.ForeignObject', {
   attrs: {
     body: {
       width: 'calc(w)',
@@ -49,6 +49,7 @@ function Map() {
   const [inputValue, setInputValue] = useState('');
   const [nodes, setNodes] = useState([]);
   const paperInstance = useRef(null);
+  const graphInstance = useRef(null);
   const nodesMap = useRef({});
   const editingNodeRef = useRef(null);
 
@@ -61,10 +62,12 @@ function Map() {
     updateNodeDescription,
     canEditNode,
     moveNode,
+    removeNode,
+    addNode,
     getLockedNodes,
     lockedNodes,
     currentUser
-  } = useMindMapLock(nodesMap, mapId, paperInstance, ReloadCodeElement);
+  } = useMindMapLock(nodesMap, mapId, paperInstance, graphInstance);
 
   useEffect(() => {
     const GetNodes = async (mapId) => {
@@ -87,6 +90,7 @@ function Map() {
     const namespace = shapes;
 
     const graph = new dia.Graph({}, { cellNamespace: namespace });
+    graphInstance.current = graph;
 
     const paper = new dia.Paper({
       el: paperRef.current,
@@ -130,7 +134,9 @@ function Map() {
 
           try {
             await DeleteNode(currentElement.backId);
+            await removeNode(currentElement.backId);
             currentElement.remove();
+            delete nodesMap.current[currentElement.backId];
           } catch (error) {
             console.error('Ошибка удаления узла:', error);
           }
@@ -189,7 +195,9 @@ function Map() {
             }
           });
 
-          const newRect = CreateElement("New Node", paper, graph, { x: newX, y: newY }, "#FFFFFF", node.data.id);
+          await addNode(node.data.id, newX, newY, currentElement.backId);
+
+          const newRect = CreateElement(nodesMap, mapId, "New Node", paper, graph, { x: newX, y: newY }, "#FFFFFF", node.data.id, requestLock, releaseLock);
 
           const newLink = new shapes.standard.Link();
           newLink.set('z', 0);
@@ -203,7 +211,7 @@ function Map() {
 
     const nodeMap = {};
     nodes.forEach((node) => {
-      var newNode = CreateElement(node.title, paper, graph, { x: node.x, y: node.y }, node.style == null ? "#FFFFFF" : node.style.backgroundColor, node.id, node.content);
+      var newNode = CreateElement(nodesMap, mapId, node.title, paper, graph, { x: node.x, y: node.y }, node.style == null ? "#FFFFFF" : node.style.backgroundColor, node.id, node.content, requestLock, releaseLock);
       nodeMap[node.id] = newNode;
     });
 
@@ -335,54 +343,7 @@ function Map() {
     padding: '5px',
     backgroundColor: '#fff'
   };
-
-  function ReloadCodeElement(node, code)
-  {
-      // let newnode = node;
-      // node.remove();
-      // console.log(node.label.text);
-      // CreateElement(newnode.title, paper, graph, { x: newnode.position.x, y: newnode.position.y }, "#FFFFFF", newnode.backId, code);
-      // const newLink = new shapes.standard.Link();
-      // newLink.set('z', 0);
-      // newLink.source(currentElement);
-      // newLink.target(newRect);
-      // newLink.addTo(graph);
-  }
-
-  function CreateElement(innertext, paper, graph, position, backgroundColor = "#FFFFFF", nodeId, initialCode = '', isLocked = false) {
-    const node = new Card();
-    node.position(position.x, position.y);
-    node.resize(180, 50);
-    node.addTo(graph);
-
-    node.attr('body', {
-      stroke: isLocked ? '#999' : '#C94A46',
-      fill: isLocked ? '#f5f5f5' : backgroundColor
-    });
-    node.attr('label', { text: innertext, fill: '#353535' });
-    node.set('z', 1);
-
-    let nodeElement = paper.findViewByModel(node).el;
-    let foreignObject = nodeElement.querySelector('foreignObject');
-
-    let nameContainer = document.createElement('div');
-    let root = createRoot(nameContainer);
-    root.render(<CardContent initialName={innertext} initialCode={initialCode} initCardId={nodeId} lockNode={() => requestLock(nodeId)} unlockNode={() => releaseLock(nodeId)} updateDescription={(nodeId, code) => updateNodeDescription(nodeId, code)} />);
-    foreignObject.appendChild(nameContainer);
-
-    const resizeObserver = new ResizeObserver(() => {
-      const { width, height } = nameContainer.getBoundingClientRect();
-      node.resize(width + 12, height + 40);
-    });
-
-    resizeObserver.observe(nameContainer);
-
-    if (nodeId) {
-      node.backId = nodeId;
-      nodesMap.current[nodeId] = node;
-    }
-    return node;
-  }
+  
 
   return (
     <>
@@ -402,6 +363,42 @@ function Map() {
       )}
     </>
   )
+}
+
+export function CreateElement(nodesMap, mapId, innertext, paper, graph, position, backgroundColor = "#FFFFFF", nodeId, initialCode = '', isLocked = false) {
+  const node = new Card();
+  node.position(position.x, position.y);
+  node.resize(180, 50);
+  node.addTo(graph);
+
+  node.attr('body', {
+    stroke: isLocked ? '#999' : '#C94A46',
+    fill: isLocked ? '#f5f5f5' : backgroundColor
+  });
+  node.attr('label', { text: innertext, fill: '#353535' });
+  node.set('z', 1);
+
+  let nodeElement = paper.findViewByModel(node).el;
+  let foreignObject = nodeElement.querySelector('foreignObject');
+
+  let nameContainer = document.createElement('div');
+  let root = createRoot(nameContainer);
+  //root.render(<CardContent mapId={mapId} initialName={innertext} initialCode={initialCode} initCardId={nodeId} lockNode={() => requestLock(nodeId)} unlockNode={() => releaseLock(nodeId)} />);
+  root.render(<CardContent mapId={mapId} initialName={innertext} initialCode={initialCode} initCardId={nodeId} />);
+  foreignObject.appendChild(nameContainer);
+
+  const resizeObserver = new ResizeObserver(() => {
+    const { width, height } = nameContainer.getBoundingClientRect();
+    node.resize(width + 12, height + 40);
+  });
+
+  resizeObserver.observe(nameContainer);
+
+  if (nodeId) {
+    node.backId = nodeId;
+    nodesMap.current[nodeId] = node;
+  }
+  return node;
 }
 
 export default Map;

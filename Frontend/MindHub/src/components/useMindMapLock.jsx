@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { HubConnectionBuilder } from '@microsoft/signalr';
+import { CreateElement, Card } from './Map';
+import { shapes } from '@joint/core';
 
-export const useMindMapLock = (nodeMapRef, mapId, paperInstance, reloadNode =null) => {
+export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance) => {
   const [connection, setConnection] = useState(null);
   const [lockedNodes, setLockedNodes] = useState({});
   const lockedNodesRef = useRef(lockedNodes);
@@ -92,11 +94,32 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance, reloadNode =nul
       }
     });
 
-    connection.on("ReceiveNodeDescriptionUpdate", (nodeId, code) => {
+    connection.on("ReceiveAddNode", (nodeId, newX, newY, parentNodeId) => {
+      if (!nodeMapRef.current[nodeId]) {
+        console.log(graphInstance)
+        try{
+          const newRect = CreateElement(nodeMapRef, mapId, "New Node", paperInstance.current, graphInstance.current,  { x: parseFloat(newX), y: parseFloat(newY) }, "#FFFFFF", nodeId)
+          nodeMapRef.current[nodeId] = newRect;
+          let parentNode = nodeMapRef.current[parentNodeId];
+          const newLink = new shapes.standard.Link();
+          newLink.set('z', 0);
+          newLink.source(parentNode);
+          newLink.target(newRect);
+          newLink.addTo(graphInstance.current);
+        }
+        catch(error)
+        {
+          console.log(error);
+        }
+        
+      }
+    });
+
+    connection.on("ReceiveRemoveNode", (nodeId) => {
       const node = nodeMapRef.current[nodeId];
       if (node) {
-        reloadNode(node, code);
-        // cardNameElement.innerHTML = newDescription;
+        node.remove();
+        delete nodeMapRef.current[nodeId];
       }
     });
 
@@ -104,11 +127,39 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance, reloadNode =nul
       connection.off('ReceiveLockStatus', handler);
       connection.off('ReceiveNodePosition', positionHandler);
       connection.off("ReceiveNodeNameUpdate");
-      connection.off("ReceiveNodeDescriptionUpdate");
+      connection.off("ReceiveAddNode");
+      connection.off("ReceiveRemoveNode");
     };
   }, [connection]);
 
-  // Функция для перемещения узла
+  const addNode = useCallback(async (nodeId, x, y, parentNode) => {
+    if (!connection) return;
+
+    try {
+      await connection.invoke("AddNode", mapId.toString(), nodeId.toString(), x.toString(), y.toString(), parentNode.toString());
+
+    } catch (error) {
+      console.error("Add node failed:", error);
+      return null;
+    }
+  }, [connection, mapId]);
+
+  const removeNode = useCallback(async (nodeId) => {
+    if (!connection) return;
+    try {
+      const node = nodeMapRef.current[nodeId];
+
+      if (node) {
+        node.remove();
+        delete nodeMapRef.current[nodeId];
+      }
+
+      await connection.invoke("RemoveNode", mapId.toString(), nodeId.toString());
+    } catch (error) {
+      console.error("Remove node failed:", error);
+    }
+  }, [connection, mapId]);
+
   const moveNode = useCallback(async (mapId, nodeId, x, y) => {
     if (!connection) return false;
 
@@ -184,6 +235,8 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance, reloadNode =nul
     updateNodeDescription,
     canEditNode,
     moveNode,
+    removeNode,
+    addNode,
     getLockedNodes,
     lockedNodes,
     currentUser

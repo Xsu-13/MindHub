@@ -75,5 +75,13 @@ namespace MindHub.API.Controllers
         {
             await Clients.OthersInGroup(mapId).SendAsync("ReceiveNodeDescriptionUpdate", nodeId, newDescription);
         }
+        public async Task AddNode(string mapId, string id, string x, string y, string parentNodeId)
+        {
+            await Clients.OthersInGroup(mapId).SendAsync("ReceiveAddNode", id, x, y, parentNodeId);
+        }
+        public async Task RemoveNode(string mapId, string nodeId)
+        {
+            await Clients.OthersInGroup(mapId).SendAsync("ReceiveRemoveNode", nodeId);
+        }
     }
 }
