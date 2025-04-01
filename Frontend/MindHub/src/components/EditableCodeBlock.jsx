@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import CodeEditor from "@uiw/react-textarea-code-editor";
 
-export default function EditableCodeBlock({ initialCode = '', onCodeChange }) {
+export default function EditableCodeBlock({ initialCode = '', onCodeChange}) {
     const textRef = useRef();
     const [code, setCode] = React.useState(initialCode);
 
@@ -14,7 +14,6 @@ export default function EditableCodeBlock({ initialCode = '', onCodeChange }) {
         if (onCodeChange) {
             onCodeChange(evn.target.value);
         }
-
         autoResize(evn.target);
     };
 

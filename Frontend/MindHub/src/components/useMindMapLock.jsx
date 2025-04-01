@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { HubConnectionBuilder } from '@microsoft/signalr';
 
-export const useMindMapLock = (nodeMapRef, mapId, paperInstance) => {
+export const useMindMapLock = (nodeMapRef, mapId, paperInstance, reloadNode =null) => {
   const [connection, setConnection] = useState(null);
   const [lockedNodes, setLockedNodes] = useState({});
   const lockedNodesRef = useRef(lockedNodes);
@@ -92,10 +92,11 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance) => {
       }
     });
 
-    connection.on("ReceiveNodeDescriptionUpdate", (nodeId, newDescription) => {
+    connection.on("ReceiveNodeDescriptionUpdate", (nodeId, code) => {
       const node = nodeMapRef.current[nodeId];
       if (node) {
-        node.setData({ ...node.getData(), description: newDescription });
+        reloadNode(node, code);
+        // cardNameElement.innerHTML = newDescription;
       }
     });
 
@@ -159,6 +160,7 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance) => {
   const updateNodeDescription = useCallback(async (nodeId, newDescription) => {
     if (!connection) return;
     try {
+      console.log("updating description");
       await connection.invoke("UpdateNodeDescription", mapId.toString(), nodeId.toString(), newDescription);
     } catch (err) {
       console.error("Failed to update node description:", err);

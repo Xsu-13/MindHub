@@ -64,7 +64,7 @@ function Map() {
     getLockedNodes,
     lockedNodes,
     currentUser
-  } = useMindMapLock(nodesMap, mapId, paperInstance);
+  } = useMindMapLock(nodesMap, mapId, paperInstance, ReloadCodeElement);
 
   useEffect(() => {
     const GetNodes = async (mapId) => {
@@ -336,6 +336,19 @@ function Map() {
     backgroundColor: '#fff'
   };
 
+  function ReloadCodeElement(node, code)
+  {
+      // let newnode = node;
+      // node.remove();
+      // console.log(node.label.text);
+      // CreateElement(newnode.title, paper, graph, { x: newnode.position.x, y: newnode.position.y }, "#FFFFFF", newnode.backId, code);
+      // const newLink = new shapes.standard.Link();
+      // newLink.set('z', 0);
+      // newLink.source(currentElement);
+      // newLink.target(newRect);
+      // newLink.addTo(graph);
+  }
+
   function CreateElement(innertext, paper, graph, position, backgroundColor = "#FFFFFF", nodeId, initialCode = '', isLocked = false) {
     const node = new Card();
     node.position(position.x, position.y);
@@ -354,8 +367,7 @@ function Map() {
 
     let nameContainer = document.createElement('div');
     let root = createRoot(nameContainer);
-    root.render(<CardContent initialName={innertext} initialCode={initialCode} initCardId={nodeId} lockNode={() => requestLock(nodeId)} unlockNode={() => releaseLock(nodeId)} />);
-
+    root.render(<CardContent initialName={innertext} initialCode={initialCode} initCardId={nodeId} lockNode={() => requestLock(nodeId)} unlockNode={() => releaseLock(nodeId)} updateDescription={(nodeId, code) => updateNodeDescription(nodeId, code)} />);
     foreignObject.appendChild(nameContainer);
 
     const resizeObserver = new ResizeObserver(() => {

@@ -111,6 +111,20 @@ export const fetchGetMaps = async (userId) => {
 }
 
 //---------------NODE----------------
+export const GetNodeById = async (nodeId) => {
+    var nodes = await fetchGetNode(nodeId) ?? "Что-то пошло не так."
+    return nodes; 
+}
+
+export const fetchGetNode = async (nodeId) => {
+    try{
+        return await axios.get(domen+"/api/nodes/" + nodeId)
+    }
+    catch(e)
+    {
+        console.log(e);
+    }
+}
 
 export const GetNodesByMapId = async (mapId) => {
     var nodes = await fetchGetNodes(mapId) ?? "Что-то пошло не так."

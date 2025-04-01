@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../styles/CardTitle.css';
 import EditableCodeBlock from './EditableCodeBlock';
-import { PatchNode } from '../services/urls.js';
+import { PatchNode, GetNodeById } from '../services/urls.js';
 
-export default function CardContent({ initialName = '', initialCode = '', initCardId = null, lockNode = null, unlockNode = null }) {
+export default function CardContent({initialName = '', initialCode = '', initCardId = null, lockNode = null, unlockNode = null, updateDescription = null }) {
     const [isCodeBlockVisible, setIsCodeBlockVisible] = useState(false);
     const [name, setName] = React.useState(initialName);
     const [code, setCode] = React.useState(initialCode);
@@ -15,10 +15,15 @@ export default function CardContent({ initialName = '', initialCode = '', initCa
         setCode(initialCode);
     }, [initialName, initialCode, initCardId]);
 
-    const toggleCodeBlock = () => {
+    const toggleCodeBlock = async () => {
         setIsCodeBlockVisible(!isCodeBlockVisible);
         if (!isCodeBlockVisible)
+        {
             lockNode(initCardId);
+            var node = await GetNodeById(cardId);
+            let code = node.data.content;
+            setCode(code);
+        }
         else
             unlockNode(initCardId);
     };
@@ -26,6 +31,7 @@ export default function CardContent({ initialName = '', initialCode = '', initCa
     async function onCodeChange(code) {
         setCode(code);
         await PatchNode(cardId, { content: code });
+        await updateDescription(cardId, code);
     }
 
     return (
@@ -41,7 +47,7 @@ export default function CardContent({ initialName = '', initialCode = '', initCa
                 </div>
             </div>
 
-            {isCodeBlockVisible && <EditableCodeBlock initialCode={code} onCodeChange={onCodeChange} />}
+            {isCodeBlockVisible && <EditableCodeBlock initialCode={code} onCodeChange={onCodeChange}/>}
         </>
     );
 }
