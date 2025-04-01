@@ -34,8 +34,8 @@ function MapList() {
                     BorderColor: "#C94A46",
                     FontFamily: "Sans"
                 },
-                X: window.innerWidth/2 - 100,
-                Y: window.innerHeight/2 - 100
+                X: window.innerWidth / 2 - 100,
+                Y: window.innerHeight / 2 - 100
             }
         ]
     };
@@ -62,9 +62,9 @@ function MapList() {
         setSelectedMap(item);
         setMenuPosition({ x: e.pageX, y: e.pageY });
         setIsMenuOpen(true);
-      };
+    };
 
-      const handleRename = async (mapId, title) => {
+    const handleRename = async (mapId, title) => {
         setIsRenaming(false);
         setIsMenuOpen(false);
         var patch = {
@@ -73,37 +73,36 @@ function MapList() {
         await PatchMap(mapId, patch);
         const updatedMaps = maps.map((map) =>
             map.id === mapId ? { ...map, title: newTitle } : map
-          )
+        )
 
         setMaps(updatedMaps);
-      };
-    
-      const handleOptionClick = async (option) => {
+    };
+
+    const handleOptionClick = async (option) => {
         if (option === 'Переименовать') {
             setIsRenaming(true);
             setNewTitle(selectedMap.title);
             setIsMenuOpen(false);
-          }
-          else if (option === 'Открыть') {
+        }
+        else if (option === 'Открыть') {
             navigate('/map', { state: { mapId: selectedMap.id } });
-          }
-          else if(optipn === "Создать ссылку для приглашения") 
-          {
+        }
+        else if (optipn === "Создать ссылку для приглашения") {
             await CreateInvite(selectedMap.id);
-          }
-          else if (option === 'Переместить в корзину') {
+        }
+        else if (option === 'Переместить в корзину') {
             await DeleteMap(selectedMap.id);
             const updatedMaps = maps.filter((map) =>
                 map.id !== selectedMap.id
-              )
-    
+            )
+
             setMaps(updatedMaps);
             setIsMenuOpen(false);
-          } 
-          else {
+        }
+        else {
             setIsMenuOpen(false);
-          }
-      };
+        }
+    };
 
     useEffect(() => {
 
@@ -117,19 +116,18 @@ function MapList() {
             }
         }
 
-        if(localStorage.getItem("user") !== null)
-        {
+        if (localStorage.getItem("user") !== null) {
             const user = JSON.parse(localStorage.getItem("user"));
             setIsAuthenticated(true);
             setUser(user);
 
             GetMaps(user.id);
         }
-        
+
 
         const handleClickOutside = (event) => {
             if (modalRef.current && !modalRef.current.contains(event.target)) {
-                setShowLogin(false); 
+                setShowLogin(false);
                 setShowSignUp(false);
             }
         };
@@ -146,56 +144,56 @@ function MapList() {
 
         const handleClickOutsideMenu = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
-              setIsMenuOpen(false); 
+                setIsMenuOpen(false);
             }
-          };
-      
-          document.addEventListener('mousedown', handleClickOutsideMenu);
-          return () => {
+        };
+
+        document.addEventListener('mousedown', handleClickOutsideMenu);
+        return () => {
             document.removeEventListener('mousedown', handleClickOutsideMenu);
-            templateCards.forEach(card => card.removeEventListener('click', () => {}));
+            templateCards.forEach(card => card.removeEventListener('click', () => { }));
             document.removeEventListener('mousedown', handleClickOutside);
-          };
+        };
     }, [menuRef]);
 
     return (
         <div className="container">
-                {isAuthenticated ? (
-                    <div>
-                        <header>
-                            <button className="logout" onClick={handleLogout}>Выйти</button>
-                            <h1>Добро пожаловать, {user.username}!</h1>
-                        </header>
-                    
+            {isAuthenticated ? (
+                <div>
+                    <header>
+                        <button className="logout" onClick={handleLogout}>Выйти</button>
+                        <h1>Добро пожаловать, {user.username}!</h1>
+                    </header>
+
                     <section className="templates">
-                    <h2>Шаблоны</h2>
-                    <div className="template-buttons">
-                        <div className="template-card selected" onClick={handleEmptyMapClick}>Пустая карта</div>
-                        <div className="template-card">Интеллект-карта</div>
-                    </div>
-                </section>
-    
-                <section className="maps-list">
-                    <h2>Все карты</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Название</th>
-                                <th>Создано</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {maps.map((item, index) => (
+                        <h2>Шаблоны</h2>
+                        <div className="template-buttons">
+                            <div className="template-card selected" onClick={handleEmptyMapClick}>Пустая карта</div>
+                            <div className="template-card">Интеллект-карта</div>
+                        </div>
+                    </section>
+
+                    <section className="maps-list">
+                        <h2>Все карты</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Название</th>
+                                    <th>Создано</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {maps.map((item, index) => (
                                     <tr key={index} onDoubleClick={(e) => navigate('/map', { state: { mapId: item.id } })} onContextMenu={(e) => handleRightClick(e, item)}>
                                         <td>{isRenaming && selectedMap.id === item.id ? (
                                             <input
-                                            type="text"
-                                            value={newTitle}
-                                            onChange={(e) => setNewTitle(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') handleRename(item.id, e.target.value); 
-                                            }}
-                                            autoFocus
+                                                type="text"
+                                                value={newTitle}
+                                                onChange={(e) => setNewTitle(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') handleRename(item.id, e.target.value);
+                                                }}
+                                                autoFocus
                                             />
                                         ) : (
                                             item.title
@@ -203,7 +201,7 @@ function MapList() {
                                         <td>{formatDate(item.recordCreateDate)}</td>
                                     </tr>
                                 ))}
-                        </tbody>
+                            </tbody>
                         </table>
                         {isMenuOpen && (
                             <ul
@@ -212,31 +210,31 @@ function MapList() {
                                 style={{ top: menuPosition.y, left: menuPosition.x }}>
                                 <li onClick={() => handleOptionClick('Открыть')}>Открыть</li>
                                 <li onClick={() => handleOptionClick('Создать ссылку для приглашения')}>
-                                Создать ссылку для приглашения
+                                    Создать ссылку для приглашения
                                 </li>
                                 <li onClick={() => handleOptionClick('Переименовать')}>Переименовать</li>
                                 <li onClick={() => handleOptionClick('Переместить в корзину')}>
-                                Переместить в корзину
+                                    Переместить в корзину
                                 </li>
                             </ul>
-                            )}
-                </section>
-                    </div>
-                ) : (
-                    <div className="background">
-                        <header className="buttons">
+                        )}
+                    </section>
+                </div>
+            ) : (
+                <div className="background">
+                    <header className="buttons">
                         <button className='button-login' onClick={() => setShowLogin(true)}>Войти</button>
                         <button className='button-signup' onClick={() => setShowSignUp(true)}>Регистрация</button>
-                        </header>
-                    </div>
-                    
-                )}
+                    </header>
+                </div>
+
+            )}
 
             {(showLogin || showSignUp) && (
                 <div className={`modal ${showLogin || showSignUp ? 'show' : ''}`}>
                     <div className="modal-content" ref={modalRef}>
-                        <span className="close" onClick={() => {setShowLogin(false); setShowSignUp(false)}}>&times;</span>
-                        <LoginForm showLogin={showLogin} showSignUp={showSignUp}/>
+                        <span className="close" onClick={() => { setShowLogin(false); setShowSignUp(false) }}>&times;</span>
+                        <LoginForm showLogin={showLogin} showSignUp={showSignUp} />
                     </div>
                 </div>
             )}

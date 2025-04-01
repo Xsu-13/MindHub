@@ -55,7 +55,6 @@ namespace MindHub.API.Controllers
         {
             await Clients.Others.SendAsync("ReceiveMousePosition", connectionId, x, y);
         }
-
         
         // Обновление позиции нода для группы пользователей
         public async Task SubscribeToMap(string mapId)
@@ -66,9 +65,15 @@ namespace MindHub.API.Controllers
 
         public async Task UpdateNodePosition(string mapId, string nodeId, double x, double y)
         {
-            // Здесь можно добавить валидацию и сохранение в БД
-            //await Clients.OthersInGroup(mapId).SendAsync("ReceiveNodePosition", nodeId, x, y);
-            await Clients.Others.SendAsync("ReceiveNodePosition", nodeId, x, y);
+            await Clients.OthersInGroup(mapId).SendAsync("ReceiveNodePosition", nodeId, x, y);
+        }
+        public async Task UpdateNodeName(string mapId, string nodeId, string newNodeName)
+        {
+            await Clients.OthersInGroup(mapId).SendAsync("ReceiveNodeNameUpdate", nodeId, newNodeName);
+        }
+        public async Task UpdateNodeDescription(string mapId, string nodeId, string newDescription)
+        {
+            await Clients.OthersInGroup(mapId).SendAsync("ReceiveNodeDescriptionUpdate", nodeId, newDescription);
         }
     }
 }

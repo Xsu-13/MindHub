@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { HubConnectionBuilder } from '@microsoft/signalr';
 
-export const useMindMapLock = (nodeMapRef, mapId) => {
+export const useMindMapLock = (nodeMapRef, mapId, paperInstance) => {
   const [connection, setConnection] = useState(null);
   const [lockedNodes, setLockedNodes] = useState({});
   const lockedNodesRef = useRef(lockedNodes);
@@ -9,7 +9,7 @@ export const useMindMapLock = (nodeMapRef, mapId) => {
 
   const updateNodeStyle = useCallback((nodeId, isLocked) => {
     if (!nodeMapRef.current) return;
-    
+
     const node = nodeMapRef.current[nodeId];
     if (node) {
       node.attr({
@@ -25,9 +25,9 @@ export const useMindMapLock = (nodeMapRef, mapId) => {
   }, []);
 
   const updateNodePosition = useCallback((nodeId, x, y) => {
-    
+
     if (!nodeMapRef.current) return;
-    
+
     const node = nodeMapRef.current[nodeId];
     if (node) {
       node.position(x, y);
@@ -49,12 +49,11 @@ export const useMindMapLock = (nodeMapRef, mapId) => {
     setConnection(newConnection);
 
     newConnection.start()
-      .then(() => {console.log('Connected to lock hub');
-      return newConnection.invoke("SubscribeToMap", mapId.toString())})
+      .then(() => {
+        console.log('Connected to lock hub');
+        return newConnection.invoke("SubscribeToMap", mapId.toString())
+      })
       .catch(err => console.error('Connection failed: ', err));
-
-    //await newConnection.invoke("SubscribeToMap", mapId.toString());
-    //await newConnection.invoke("SubscribeToMap", 2);
 
     return () => {
       newConnection.stop();
@@ -75,35 +74,56 @@ export const useMindMapLock = (nodeMapRef, mapId) => {
       });
     };
 
-  const positionHandler = (nodeId, x, y) => {
-    updateNodePosition(nodeId, x, y);
-  };
+    const positionHandler = (nodeId, x, y) => {
+      updateNodePosition(nodeId, x, y);
+    };
 
     connection.on('ReceiveLockStatus', handler);
     connection.on('ReceiveNodePosition', positionHandler);
 
+    connection.on("ReceiveNodeNameUpdate", (nodeId, newNodeName) => {
+      const node = nodeMapRef.current[nodeId];
+      if (node) {
+        node.attr('label', { text: newNodeName });
+        const elementView = paperInstance.current.findViewByModel(node);
+
+        const cardNameElement = elementView.el.querySelector('.card_name');
+        cardNameElement.innerHTML = newNodeName;
+      }
+    });
+
+    connection.on("ReceiveNodeDescriptionUpdate", (nodeId, newDescription) => {
+      const node = nodeMapRef.current[nodeId];
+      if (node) {
+        node.setData({ ...node.getData(), description: newDescription });
+      }
+    });
+
     return () => {
       connection.off('ReceiveLockStatus', handler);
       connection.off('ReceiveNodePosition', positionHandler);
+      connection.off("ReceiveNodeNameUpdate");
+      connection.off("ReceiveNodeDescriptionUpdate");
     };
   }, [connection]);
 
   // Функция для перемещения узла
-const moveNode = useCallback(async (mapId, nodeId, x, y) => {
-  if (!connection) return false;
-  
-  try {
-    // Проверяем, заблокирован ли узел текущим пользователем
-    //if (lockedNodes[nodeId] && lockedNodes[nodeId] === currentUser) {
+  const moveNode = useCallback(async (mapId, nodeId, x, y) => {
+    if (!connection) return false;
+
+    try {
       await connection.invoke('UpdateNodePosition', mapId.toString(), nodeId.toString(), x, y);
-      return true;
-    //}
-    //return false;
-  } catch (error) {
-    console.error('Move node failed:', error);
-    return false;
-  }
-}, [connection, lockedNodes, currentUser]);
+      // Проверяем, заблокирован ли узел текущим пользователем
+      // if (lockedNodes[nodeId] && lockedNodes[nodeId] === currentUser) {
+      //   await connection.invoke('UpdateNodePosition', mapId.toString(), nodeId.toString(), x, y);
+      //   return true;
+      // }
+      // return false;
+    } catch (error) {
+      console.error('Move node failed:', error);
+      return false;
+    }
+  }, [connection, lockedNodes, currentUser]);
 
   // Запрос блокировки узла
   const requestLock = useCallback(async (nodeId) => {
@@ -127,6 +147,24 @@ const moveNode = useCallback(async (mapId, nodeId, x, y) => {
     }
   }, [connection]);
 
+  const updateNodeName = useCallback(async (nodeId, newNodeName) => {
+    if (!connection) return;
+    try {
+      await connection.invoke("UpdateNodeName", mapId.toString(), nodeId.toString(), newNodeName);
+    } catch (err) {
+      console.error("Failed to update node name:", err);
+    }
+  }, [connection]);
+
+  const updateNodeDescription = useCallback(async (nodeId, newDescription) => {
+    if (!connection) return;
+    try {
+      await connection.invoke("UpdateNodeDescription", mapId.toString(), nodeId.toString(), newDescription);
+    } catch (err) {
+      console.error("Failed to update node description:", err);
+    }
+  }, [connection]);
+
   // Проверка прав доступа
   const canEditNode = useCallback((nodeId) => {
     const currentLocks = lockedNodesRef.current;
@@ -140,6 +178,8 @@ const moveNode = useCallback(async (mapId, nodeId, x, y) => {
   return {
     requestLock,
     releaseLock,
+    updateNodeName,
+    updateNodeDescription,
     canEditNode,
     moveNode,
     getLockedNodes,
