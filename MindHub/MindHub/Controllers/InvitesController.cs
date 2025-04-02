@@ -48,35 +48,13 @@ namespace MindHub.API.Controllers
         }
 
         [HttpGet("accept/{token}")]
-        public async Task<ActionResult<bool>> AcceptInvite(string token, int userId)
+        public async Task<ActionResult<bool>> AcceptInviteByToken(string token)
         {
-            return true;
-            /*var invite = await _db.Invites
-                .FirstOrDefaultAsync(i => i.Token == token && i.Status == InviteStatus.Pending);
-
-            if (invite == null || invite.ExpiresAt < DateTime.UtcNow)
-                return BadRequest("Invalid or expired invitation");
-
-            // Если пользователь не авторизован - редирект на регистрацию
-            if (userId == null)
-            {
-                return RedirectToPage("/Account/Register", new { inviteToken = token });
-            }
-
-            // Добавление прав доступа
-            var access = new MapAccess
-            {
-                UserId = userId,
-                MapId = invite.MapId,
-                PermissionLevel = invite.Permissions
-            };
-
-            _db.MapAccesses.Add(access);
-            invite.Status = InviteStatus.Accepted;
-            await _db.SaveChangesAsync();*/
+            var access = await _inviteService.AcceptInvite(token);
 
             // Редирект на карту
-            //return RedirectToAction("ViewMap", "MindMaps", new { id = invite.MapId });
+            //return RedirectToAction("ViewMap", "MindMaps", new { access = access });
+            return Ok(access);
         }
     }
 }

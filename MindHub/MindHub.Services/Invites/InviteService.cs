@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using MindHub.DAL;
 using MindHub.DAL.Repositories;
 using MindHub.Domain;
@@ -37,6 +38,34 @@ namespace MindHub.Services.Invites
             await _repository.Context.SaveChangesAsync();
 
             return _mapper.Map<InviteDto>(invite);
+        }
+
+        public async Task<bool> AcceptInvite(string token)
+        {
+            var invite = await _repository.GetQuery()
+                .FirstOrDefaultAsync(i => i.Token == token);
+
+            if (invite == null || invite.ExpiresAt < DateTime.UtcNow)
+                return false;
+            else return true;
+
+            // Если пользователь не авторизован - редирект на регистрацию
+            /*if (userId == null)
+            {
+                return RedirectToPage("/Account/Register", new { inviteToken = token });
+            }*/
+
+            // Добавление прав доступа
+            /*var access = new MapAccess
+            {
+                UserId = userId,
+                MapId = invite.MapId,
+                PermissionLevel = invite.Permissions
+            };
+
+            _db.MapAccesses.Add(access);
+            invite.Status = InviteStatus.Accepted;
+            await _db.SaveChangesAsync();*/
         }
     }
 }

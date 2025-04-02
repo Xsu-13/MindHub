@@ -211,7 +211,6 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance) 
   const updateNodeDescription = useCallback(async (nodeId, newDescription) => {
     if (!connection) return;
     try {
-      console.log("updating description");
       await connection.invoke("UpdateNodeDescription", mapId.toString(), nodeId.toString(), newDescription);
     } catch (err) {
       console.error("Failed to update node description:", err);
