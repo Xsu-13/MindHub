@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MindHub.Common;
 using MindHub.Domain;
 using MindHub.Services.Invites;
+using MindHub.Services.Maps;
 using System.Security.Cryptography;
 
 namespace MindHub.API.Controllers
@@ -48,12 +49,10 @@ namespace MindHub.API.Controllers
         }
 
         [HttpGet("accept/{token}")]
-        public async Task<ActionResult<bool>> AcceptInviteByToken(string token)
+        public async Task<ActionResult<MapDto>> AcceptInviteByToken(string token)
         {
             var access = await _inviteService.AcceptInvite(token);
 
-            // Редирект на карту
-            //return RedirectToAction("ViewMap", "MindMaps", new { access = access });
             return Ok(access);
         }
     }

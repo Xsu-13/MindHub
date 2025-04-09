@@ -19,7 +19,11 @@ namespace MindHub.Services.Invites
         public InviteService(IRepository<Invite> repository, IMapper mapper) 
             : base(repository, mapper)
         {
-
+        }
+        protected override IQueryable<Invite> GetQueryCore()
+        {
+            return base.GetQueryCore()
+                .Include(f => f.Map);
         }
 
         public async Task<InviteDto> CreateInvite(int mapId, int userId)
@@ -40,32 +44,16 @@ namespace MindHub.Services.Invites
             return _mapper.Map<InviteDto>(invite);
         }
 
-        public async Task<bool> AcceptInvite(string token)
+        public async Task<MapDto?> AcceptInvite(string token)
         {
-            var invite = await _repository.GetQuery()
+            var invite = await GetQueryCore()
                 .FirstOrDefaultAsync(i => i.Token == token);
 
             if (invite == null || invite.ExpiresAt < DateTime.UtcNow)
-                return false;
-            else return true;
-
-            // Если пользователь не авторизован - редирект на регистрацию
-            /*if (userId == null)
-            {
-                return RedirectToPage("/Account/Register", new { inviteToken = token });
-            }*/
-
-            // Добавление прав доступа
-            /*var access = new MapAccess
-            {
-                UserId = userId,
-                MapId = invite.MapId,
-                PermissionLevel = invite.Permissions
-            };
-
-            _db.MapAccesses.Add(access);
-            invite.Status = InviteStatus.Accepted;
-            await _db.SaveChangesAsync();*/
+                return null;
+            else
+                return _mapper.Map<MapDto>(invite.Map);
+           
         }
     }
 }
