@@ -11,6 +11,6 @@ namespace MindHub.Services.Invites
     public interface IInviteService : IService<InviteDto>
     {
         Task<InviteDto> CreateInvite(int mapId, int userId);
-        Task<MapDto?> AcceptInvite(string token);
+        Task<int?> AcceptInvite(string token);
     }
 }

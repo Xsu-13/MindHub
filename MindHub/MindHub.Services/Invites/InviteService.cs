@@ -44,7 +44,7 @@ namespace MindHub.Services.Invites
             return _mapper.Map<InviteDto>(invite);
         }
 
-        public async Task<MapDto?> AcceptInvite(string token)
+        public async Task<int?> AcceptInvite(string token)
         {
             var invite = await GetQueryCore()
                 .FirstOrDefaultAsync(i => i.Token == token);
@@ -52,7 +52,7 @@ namespace MindHub.Services.Invites
             if (invite == null || invite.ExpiresAt < DateTime.UtcNow)
                 return null;
             else
-                return _mapper.Map<MapDto>(invite.Map);
+                return invite.MapId;
            
         }
     }

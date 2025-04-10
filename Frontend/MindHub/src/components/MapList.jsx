@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/MapListStyle.css';
 import LoginForm from "./LoginForm.jsx"
-import { AddMap, PatchMap, DeleteMap, GetMapsByUserId, fetchLogout } from '../services/urls.js';
+import { AddMap, PatchMap, DeleteMap, GetMapsByUserId, fetchLogout, CreateInvite } from '../services/urls.js';
 
 
 function MapList() {
@@ -78,6 +78,23 @@ function MapList() {
         setMaps(updatedMaps);
     };
 
+    function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed'; // Чтобы не было прокрутки
+        document.body.appendChild(textarea);
+        textarea.select();
+        
+        try {
+          document.execCommand('copy');
+          console.log('Текст скопирован через execCommand');
+        } catch (err) {
+          console.error('Ошибка копирования:', err);
+        } finally {
+          document.body.removeChild(textarea);
+        }
+      }
+
     const handleOptionClick = async (option) => {
         if (option === 'Переименовать') {
             setIsRenaming(true);
@@ -87,8 +104,11 @@ function MapList() {
         else if (option === 'Открыть') {
             navigate('/map', { state: { mapId: selectedMap.id } });
         }
-        else if (optipn === "Создать ссылку для приглашения") {
-            await CreateInvite(selectedMap.id);
+        else if (option === "Создать ссылку для приглашения") {
+            let href = await CreateInvite(selectedMap.id, user.id);
+            console.log(href)
+            fallbackCopy(href.data);
+            alert("Ссылка с приглашением скопирована")
         }
         else if (option === 'Переместить в корзину') {
             await DeleteMap(selectedMap.id);

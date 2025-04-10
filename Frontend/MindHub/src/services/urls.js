@@ -4,7 +4,6 @@ axios.defaults.withCredentials = true;
 
 let domen = "https://localhost:5001";
 
-
 //---------------USER----------------
 
 export const LoginUser = async (email, password) => {
@@ -188,14 +187,31 @@ export const fetchDeleteNode = async (nodeId) => {
 
 //---------------INVITES----------------
 
-export const CreateInvite = async (mapId) => {
-    var nodes = await fetchCreateInvite(mapId) ?? "Что-то пошло не так."
+export const CreateInvite = async (mapId, userId) => {
+    var nodes = await fetchCreateInvite(mapId, userId) ?? "Что-то пошло не так."
     return nodes; 
 }
 
-export const fetchCreateInvite = async (mapId) => {
+export const fetchCreateInvite = async (mapId, userId) => {
     try{
-        return await axios.post(domen+"/api/nodes/"+mapId)
+        return await axios.post(domen+"/api/invites/map/"+ mapId+"/user/" + userId)
+    }
+    catch(e)
+    {
+        console.log(e);
+    }
+}
+
+export const AcceptInvite = async (token) => {
+    var nodes = await fetchAcceptInvite(token) ?? "Что-то пошло не так."
+    return nodes; 
+}
+
+export const fetchAcceptInvite = async (token) => {
+    try{
+        let mapId = await axios.get(domen+"/api/invites/accept/"+token);
+        console.log(mapId);
+        return mapId;
     }
     catch(e)
     {
