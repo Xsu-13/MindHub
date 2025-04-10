@@ -254,7 +254,7 @@ function MapList() {
                 <div className={`modal ${showLogin || showSignUp ? 'show' : ''}`}>
                     <div className="modal-content" ref={modalRef}>
                         <span className="close" onClick={() => { setShowLogin(false); setShowSignUp(false) }}>&times;</span>
-                        <LoginForm showLogin={showLogin} showSignUp={showSignUp} />
+                        <LoginForm showLogin={showLogin} showSignUp={showSignUp} closeForm={() => setShowSignUp(false)}/>
                     </div>
                 </div>
             )}

@@ -14,7 +14,7 @@ export const LoginUser = async (email, password) => {
 
 export const SignUpUser = async (username, email, password) => {
     var status = await fetchSignUp(username, email, password) ?? "Что-то пошло не так."
-    return user; 
+    return status; 
 }
 
 export const fetchLogin = async (email, password) => {

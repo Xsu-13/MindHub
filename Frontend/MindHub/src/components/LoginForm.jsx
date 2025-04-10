@@ -2,7 +2,7 @@ import { useState } from 'react';
 import '../styles/LoginFormStyle.css';
 import { LoginUser, SignUpUser } from '../services/urls.js';
 
-function LoginForm({ showLogin, showSignUp }) {
+function LoginForm({ showLogin, showSignUp, closeForm }) {
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
     const [signupUsername, setSignupUsername] = useState('');
@@ -27,6 +27,7 @@ function LoginForm({ showLogin, showSignUp }) {
         event.preventDefault();
         const status = await SignUpUser(signupUsername, signupEmail, signupPassword);
         if (status) {
+            closeForm();
             setSignupError('');
         } else {
             setSignupError('Invalid email or password');
