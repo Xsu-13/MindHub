@@ -3,7 +3,7 @@ import { HubConnectionBuilder } from '@microsoft/signalr';
 import { CreateElement, Card } from './Map';
 import { shapes } from '@joint/core';
 
-export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance) => {
+export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance, nodesList) => {
   const [connection, setConnection] = useState(null);
   const [lockedNodes, setLockedNodes] = useState({});
   const lockedNodesRef = useRef(lockedNodes);
@@ -11,8 +11,8 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance) 
 
   const updateNodeStyle = useCallback((nodeId, isLocked) => {
     if (!nodeMapRef.current) return;
-
     const node = nodeMapRef.current[nodeId];
+    
     if (node) {
       node.attr({
         body: {
@@ -23,6 +23,16 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance) 
           fill: isLocked ? '#999' : '#353535'
         }
       });
+      console.log(nodesList)
+      if (nodesList().find(item => item.id == nodeId).parentNodeId === null)
+        {
+          console.log(isLocked)
+          node.attr({
+            body: {
+              fill: isLocked ? '#f5f5f5' : '#ff5252'
+            }
+          });
+        }
     }
   }, []);
 
@@ -96,7 +106,6 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance) 
 
     connection.on("ReceiveAddNode", (nodeId, newX, newY, parentNodeId) => {
       if (!nodeMapRef.current[nodeId]) {
-        console.log(graphInstance)
         try{
           const newRect = CreateElement(nodeMapRef, mapId, "New Node", paperInstance.current, graphInstance.current,  { x: parseFloat(newX), y: parseFloat(newY) }, "#FFFFFF", nodeId)
           nodeMapRef.current[nodeId] = newRect;

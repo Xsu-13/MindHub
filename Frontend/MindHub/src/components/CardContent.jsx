@@ -33,7 +33,6 @@ export default function CardContent({nodeMapRef = null, mapId ='', initialName =
 
         if (!newConnection) return;
         newConnection.on("ReceiveNodeDescriptionUpdate", (nodeId, code) => {
-            console.log("000")
             if(nodeId== cardId)
                 setCode(code);
         });

@@ -52,6 +52,7 @@ function Map() {
   const graphInstance = useRef(null);
   const nodesMap = useRef({});
   const editingNodeRef = useRef(null);
+  const nodesList = useRef([]);
 
   const mapId = location.state?.mapId;
 
@@ -59,21 +60,18 @@ function Map() {
     requestLock,
     releaseLock,
     updateNodeName,
-    updateNodeDescription,
     canEditNode,
     moveNode,
     removeNode,
     addNode,
-    getLockedNodes,
-    lockedNodes,
-    currentUser
-  } = useMindMapLock(nodesMap, mapId, paperInstance, graphInstance);
+  } = useMindMapLock(nodesMap, mapId, paperInstance, graphInstance, () => nodesList.current);
 
   useEffect(() => {
     const GetNodes = async (mapId) => {
       const nodesData = await GetNodesByMapId(mapId);
       if (Array.isArray(nodesData.data)) {
         setNodes(nodesData.data);
+        nodesList.current = nodesData.data;
       } else {
         console.error('Полученные данные не являются массивом:', nodesData.data);
         setNodes([]);
@@ -197,7 +195,7 @@ function Map() {
 
           await addNode(node.data.id, newX, newY, currentElement.backId);
 
-          const newRect = CreateElement(nodesMap, mapId, "New Node", paper, graph, { x: newX, y: newY }, "#FFFFFF", node.data.id, requestLock, releaseLock);
+          const newRect = CreateElement(nodesMap, mapId, "New Node", paper, graph, { x: newX, y: newY }, "#FFFFFF", node.data.id);
 
           const newLink = new shapes.standard.Link();
           newLink.set('z', 0);
@@ -211,7 +209,7 @@ function Map() {
 
     const nodeMap = {};
     nodes.forEach((node) => {
-      var newNode = CreateElement(nodesMap, mapId, node.title, paper, graph, { x: node.x, y: node.y }, node.style == null ? "#FFFFFF" : node.style.backgroundColor, node.id, node.content, requestLock, releaseLock);
+      var newNode = CreateElement(nodesMap, mapId, node.title, paper, graph, { x: node.x, y: node.y }, node.style == null ? "#FFFFFF" : node.style.backgroundColor, node.id, node.content);
       nodeMap[node.id] = newNode;
     });
 
