@@ -17,7 +17,6 @@ namespace MindHub.Services.Nodes
         public string Content { get; set; }
         public float X { get; set; }
         public float Y { get; set; }
-        public int? StyleId { get; set; }
         public StyleDto Style { get; set; }
     }
 }

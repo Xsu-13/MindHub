@@ -55,8 +55,8 @@ namespace MindHub.API.Controllers
             foreach(var node in mapDto.Nodes)
             {
                 await _nodeService.EnableAsync(node.Id);
-                if(node.StyleId != null)
-                    await _styleService.EnableAsync(node.StyleId ?? 0);
+                if(node.Style != null)
+                    await _styleService.EnableAsync(node.Style?.Id ?? 0);
             }
             return Ok(mapDto);
         }

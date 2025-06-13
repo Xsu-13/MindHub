@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using MindHub.DAL;
 using MindHub.Domain;
+using MindHub.Services.HistoryVersions.NodeVersions;
 using MindHub.Services.Invites;
 using MindHub.Services.Maps;
 using MindHub.Services.Nodes;
@@ -23,6 +24,8 @@ namespace MindHub.Services
             CreateMap<UserDto, User>();
             CreateMap<Invite, InviteDto>();
             CreateMap<InviteDto, Invite>();
+            CreateMap<NodeVersionDto, NodeVersion>();
+            CreateMap<NodeVersion, NodeVersionDto>();
         }
     }
 }

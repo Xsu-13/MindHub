@@ -22,6 +22,7 @@ namespace MindHub.DAL
         public virtual DbSet<Node> Nodes { get; set; }
         public virtual DbSet<Style> Styles { get; set; }
         public virtual DbSet<Invite> Invites { get; set; }
+        public virtual DbSet<NodeVersion> NodeVersions { get; set; }
         #endregion
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

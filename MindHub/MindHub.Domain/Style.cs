@@ -11,7 +11,6 @@ namespace MindHub.DAL
         public string BorderColor { get; set; } = "#000000";
         public int FontSize { get; set; } = 14;
         public string FontFamily { get; set; } = "Arial";
-        public ICollection<Node> Nodes { get; set; }
         public RecordStatus RecordStatus { get; set; }
         public DateTime RecordCreateDate { get; set; } = DateTime.UtcNow;
         public DateTime? RecordUpdateDate { get; set; }

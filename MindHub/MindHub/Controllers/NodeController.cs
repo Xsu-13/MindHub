@@ -44,24 +44,24 @@ namespace MindHub.API.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<NodeDto>> Create([FromBody] NodeDto entity)
+        public async Task<ActionResult<NodeDto>> Create([FromBody] NodeDto entity, [FromRoute] int userId)
         {
-            var nodeDto = await _nodeService.CreateAsync(entity);
+            var nodeDto = await _nodeService.CreateNodeAsync(entity, userId);
             return Ok(nodeDto);
         }
 
         [HttpPatch("{id}")]
         [RequestModel(typeof(NodeDto))]
-        public async Task<ActionResult> PatchQuestion([FromRoute] int id, [FromBody] JObject field)
+        public async Task<ActionResult> PatchNode([FromRoute] int id, [FromBody] JObject field, [FromRoute] int userId)
         {
-            await _nodeService.PatchAsync(id, field);
+            await _nodeService.PatchNodeAsync(id, field, userId);
             return Ok();
         }
 
         [HttpDelete("{id}")]
-        public async Task Delete([FromRoute] int id)
+        public async Task Delete([FromRoute] int id, [FromRoute] int userId)
         {
-            await _nodeService.DeleteAsync(id);
+            await _nodeService.DeleteNodeAsync(id, userId);
         }
     }
 }
