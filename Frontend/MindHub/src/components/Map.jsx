@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { createRoot } from 'react-dom/client';
 import "../styles/MapStyle.css";
 import CardContent from './CardContent';
+import NavigationBar from './NavigationBar';
 import { CreateNode, PatchNode, DeleteNode, GetNodesByMapId } from '../services/urls.js';
 import MouseTracker from './MouseTracker.jsx';
 import { useMindMapLock } from './useMindMapLock.jsx';
@@ -94,7 +95,7 @@ function Map() {
       el: paperRef.current,
       model: graph,
       width: '100%',
-      height: window.innerHeight - 10,
+      height: window.innerHeight - 70, // Учитываем высоту навигационной панели (60px + отступы)
       background: { color: '#F5F5F5' },
       cellViewNamespace: namespace,
       preventDefaultViewAction: false
@@ -345,13 +346,14 @@ function Map() {
 
   return (
     <>
+      <NavigationBar />
       <div id="paper" ref={paperRef}></div>
       <MouseTracker></MouseTracker>
       {editingNode && (
         <textarea
           type="text"
           className='node_input'
-          style={{ ...inputStyle, width: 150, top: editingNode.position().y + 20, left: editingNode.position().x + 20 }}
+          style={{ ...inputStyle, width: 150, top: editingNode.position().y + 80, left: editingNode.position().x + 20 }} // Учитываем высоту навигационной панели
           value={inputValue}
           onChange={handleInputChange}
           onBlur={handleInputBlur}

@@ -13,3 +13,5 @@ MindHub/MindHub.Tests/bin
 MindHub/MindHub.Tests/obj
 MindHub/bin
 MindHub/obj
+MindHub/MindHub/appsettings.json
+MindHub/MindHub.Services/OpenRouter/OpenRouterModels.cs

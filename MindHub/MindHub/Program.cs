@@ -4,6 +4,7 @@ using MindHub.API.Middlewares;
 using MindHub.DAL;
 using MindHub.Services;
 using MindHub.Services.Users;
+using MindHub.Services.OpenRouter;
 using MindHub.API.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +12,7 @@ var services = builder.Services;
 
 services.Configure<DatabaseSettings>(options => builder.Configuration.GetSection("DatabaseSettings").Bind(options));
 services.Configure<JwtOptions>(options => builder.Configuration.GetSection("JwtOptions").Bind(options));
+services.Configure<OpenRouterSettings>(options => builder.Configuration.GetSection("OpenRouterSettings").Bind(options));
 
 builder.Host
                 .UseServiceProviderFactory(new AutofacServiceProviderFactory())
@@ -43,6 +45,9 @@ services.AddSignalR(options =>
 {
     options.EnableDetailedErrors = true;
 });
+
+// Регистрация OpenRouterService (OpenRouterClient создается внутри сервиса)
+services.AddScoped<IOpenRouterService, OpenRouterService>();
 
 var app = builder.Build();
 
