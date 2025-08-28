@@ -218,3 +218,20 @@ export const fetchAcceptInvite = async (token) => {
         console.log(e);
     }
 }
+
+//---------------AI ASSISTENT----------------
+
+export const SendOpenRouterQuery = async (query, nodes) => {
+    var nodes = await fetchSendOpenRouterQuery(query, nodes) ?? "Что-то пошло не так."
+    return nodes; 
+}
+
+export const fetchSendOpenRouterQuery = async (query, nodes) => {
+    try{
+        return await axios.post(domen+"api/openrouter/query", {query: query, context: nodes})
+    }
+    catch(e)
+    {
+        console.log(e);
+    }
+}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/NavigationBar.css';
+import { SendOpenRouterQuery } from '../services/urls';
 
 const NavigationBar = () => {
   const [assistantQuery, setAssistantQuery] = useState('');
@@ -14,6 +15,7 @@ const NavigationBar = () => {
     e.preventDefault();
     if (assistantQuery.trim()) {
       console.log('Запрос ассистенту:', assistantQuery);
+      SendOpenRouterQuery(assistantQuery, nodes);
       setAssistantQuery('');
     }
   };

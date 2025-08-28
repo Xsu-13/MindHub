@@ -19,7 +19,7 @@ namespace MindHub.API.Controllers
 
         [HttpPost("query")]
         public async Task<ActionResult<QueryResponseDto>> Query(
-            [FromBody] QueryRequestDto request, 
+            [FromBody] QueryRequestDto request,
             CancellationToken cancellationToken = default)
         {
             if (request == null)

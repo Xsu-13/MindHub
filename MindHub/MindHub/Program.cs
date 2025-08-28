@@ -46,12 +46,10 @@ services.AddSignalR(options =>
     options.EnableDetailedErrors = true;
 });
 
-// Регистрация OpenRouterService (OpenRouterClient создается внутри сервиса)
 services.AddScoped<IOpenRouterService, OpenRouterService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 app.UseUserContext();
 
 if (app.Environment.IsDevelopment())

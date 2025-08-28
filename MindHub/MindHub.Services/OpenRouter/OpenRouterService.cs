@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Options;
 using OpenRouterClient;
 using Microsoft.Extensions.Logging;
+using MindHub.Services.Nodes;
+using Newtonsoft.Json;
 
 namespace MindHub.Services.OpenRouter
 {
@@ -45,12 +47,31 @@ namespace MindHub.Services.OpenRouter
                 var temperature = request.Temperature ?? 0.7;
                 var maxTokens = request.MaxTokens ?? 2000;
 
-                _logger.LogInformation("Отправка расширенного запроса к OpenRouter API. Модель: {Model}, Temperature: {Temperature}, MaxTokens: {MaxTokens}", 
+                // Формируем промпт для структурирования мыслей
+                var systemPrompt = "Ты — помощник по структурированию мыслей. Ты помогаешь пользователям расширять и углублять их ментальные карты.\n" +
+                                   "Твои ответы должны быть краткими, четкими и готовыми для использования в качестве названий узлов карты.\n" +
+                                   "Отвечай ТОЛЬКО в формате JSON, как указано ниже строго с теми же полями, все поля должны быть заполнены (координаты в том числе).\n\n" +
+                                   "Учти контекст.\n\n";
+
+                // Формируем контекст из узлов
+                var contextJson = "";
+                if (request.context != null && request.context.Any())
+                {
+                    contextJson = JsonConvert.SerializeObject(new { nodes = request.context }, Formatting.Indented);
+                }
+
+                var fullPrompt = systemPrompt + 
+                                "КОНТЕКСТ:\n" + contextJson + "\n\n" +
+                                "ПОЛЬЗОВАТЕЛЬСКИЙ ЗАПРОС: " + request.Query;
+
+                _logger.LogInformation("Отправка запроса к OpenRouter API. Модель: {Model}, Temperature: {Temperature}, MaxTokens: {MaxTokens}", 
                     model, temperature, maxTokens);
 
                 var chatBuilder = _client.Chat
                     .WithModel(model)
-                    .AddUserMessage(request.Query);
+                    .WithTemperature((float)temperature)
+                    .WithMaxTokens(maxTokens)
+                    .AddUserMessage(fullPrompt);
 
                 var response = await chatBuilder.SendAsync();
 
@@ -66,11 +87,61 @@ namespace MindHub.Services.OpenRouter
                 var firstChoice = response.Choices.First();
                 var assistantMessage = firstChoice.Message?.Content ?? "Ответ не получен";
 
-                return new QueryResponseDto
+                _logger.LogInformation("Получен ответ от OpenRouter API: {Response}", assistantMessage);
+
+                // Парсим JSON ответ
+                try
                 {
-                    Success = true,
-                    Response = assistantMessage
-                };
+                    var jsonResponse = JsonConvert.DeserializeObject<dynamic>(assistantMessage.Replace("```json", "").Replace("```", ""));
+                    var nodes = new List<NodeDto>();
+
+                    if (jsonResponse?.nodes != null)
+                    {
+                        foreach (var nodeJson in jsonResponse.nodes)
+                        {
+                            var node = new NodeDto
+                            {
+                                // Поддерживаем как заглавные, так и строчные буквы в названиях полей
+                                Id = nodeJson.Id ?? nodeJson.id ?? 0,
+                                MapId = nodeJson.MapId ?? nodeJson.mapId ?? 0,
+                                ParentNodeId = nodeJson.ParentNodeId ?? nodeJson.parentNodeId,
+                                Title = nodeJson.Title ?? nodeJson.title ?? "",
+                                Content = nodeJson.Content ?? nodeJson.content ?? "",
+                                X = nodeJson.X ?? nodeJson.x ?? 0,
+                                Y = nodeJson.Y ?? nodeJson.y ?? 0,
+                                Style = null
+                            };
+                            nodes.Add(node);
+                        }
+                    }
+
+                    return new QueryResponseDto
+                    {
+                        Success = true,
+                        Response = nodes,
+                        Model = model
+                    };
+                }
+                catch (JsonException ex)
+                {
+                    // Если не удалось распарсить JSON, возвращаем ошибку
+                    _logger.LogError(ex, "Ошибка при парсинге JSON ответа от AI: {Response}", assistantMessage);
+                    return new QueryResponseDto
+                    {
+                        Success = false,
+                        ErrorMessage = $"Ответ AI не в правильном JSON формате. Ошибка: {ex.Message}. Ответ: {assistantMessage}"
+                    };
+                }
+                catch (Exception ex)
+                {
+                    // Обрабатываем другие возможные ошибки при парсинге
+                    _logger.LogError(ex, "Неожиданная ошибка при обработке ответа AI: {Response}", assistantMessage);
+                    return new QueryResponseDto
+                    {
+                        Success = false,
+                        ErrorMessage = $"Неожиданная ошибка при обработке ответа AI: {ex.Message}"
+                    };
+                }
             }
             catch (Exception ex)
             {
