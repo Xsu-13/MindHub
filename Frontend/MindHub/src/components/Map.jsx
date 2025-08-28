@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import "../styles/MapStyle.css";
 import CardContent from './CardContent';
 import NavigationBar from './NavigationBar';
+import NodesPreviewModal from './NodesPreviewModal';
 import { CreateNode, PatchNode, DeleteNode, GetNodesByMapId } from '../services/urls.js';
 import MouseTracker from './MouseTracker.jsx';
 import { useMindMapLock } from './useMindMapLock.jsx';
@@ -54,6 +55,13 @@ function Map() {
   const nodesMap = useRef({});
   const editingNodeRef = useRef(null);
   const nodesList = useRef([]);
+  
+  // Состояния для AI помощника
+  const [isAILoading, setIsAILoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
+  const [previewNodes, setPreviewNodes] = useState([]);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const mapId = location.state?.mapId;
 
@@ -66,6 +74,87 @@ function Map() {
     removeNode,
     addNode,
   } = useMindMapLock(nodesMap, mapId, paperInstance, graphInstance, () => nodesList.current);
+
+  // Обработчики для AI помощника
+  const handleAILoading = (loading) => {
+    setIsAILoading(loading);
+    if (!loading) {
+      setAiError(null);
+    }
+  };
+
+  const handleAIError = (error) => {
+    setAiError(error);
+    setIsAILoading(false);
+  };
+
+  const handleNodesUpdate = (newNodes) => {
+    setPreviewNodes(newNodes);
+    setShowPreviewModal(true);
+  };
+
+  const handleConfirmChanges = async () => {
+    setIsSaving(true);
+    try {
+      // Обновляем существующие узлы и создаем новые
+      const updatedNodes = [];
+      
+      for (const newNode of previewNodes) {
+        const existingNode = nodes.find(n => n.id === newNode.id);
+        
+        if (existingNode) {
+          // Обновляем существующий узел
+          await PatchNode(newNode.id, {
+            title: newNode.title,
+            content: newNode.content
+          });
+          updatedNodes.push({ ...existingNode, ...newNode });
+        } else {
+          // Создаем новый узел
+          const createdNode = await CreateNode({
+            mapId: mapId,
+            parentNodeId: newNode.parentNodeId,
+            title: newNode.title,
+            content: newNode.content,
+            x: newNode.x,
+            y: newNode.y,
+            style: newNode.style
+          });
+          updatedNodes.push(createdNode.data);
+        }
+      }
+      
+      // Обновляем состояние узлов
+      const finalNodes = [...nodes];
+      updatedNodes.forEach(updatedNode => {
+        const index = finalNodes.findIndex(n => n.id === updatedNode.id);
+        if (index >= 0) {
+          finalNodes[index] = updatedNode;
+        } else {
+          finalNodes.push(updatedNode);
+        }
+      });
+      
+      setNodes(finalNodes);
+      nodesList.current = finalNodes;
+      setShowPreviewModal(false);
+      setPreviewNodes([]);
+      
+      // Перезагружаем карту с новыми данными
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Ошибка при сохранении изменений:', error);
+      setAiError('Ошибка при сохранении изменений: ' + error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleClosePreview = () => {
+    setShowPreviewModal(false);
+    setPreviewNodes([]);
+  };
 
   useEffect(() => {
     const GetNodes = async (mapId) => {
@@ -346,9 +435,42 @@ function Map() {
 
   return (
     <>
-      <NavigationBar />
+      <NavigationBar 
+        nodes={nodes}
+        onNodesUpdate={handleNodesUpdate}
+        onLoading={handleAILoading}
+        onError={handleAIError}
+      />
+      
+      {/* Показываем уведомления о состоянии AI */}
+      {isAILoading && (
+        <div className="ai-loading-notification">
+          <span className="loading-icon">⌛</span>
+          Обработка запроса...
+        </div>
+      )}
+      
+      {aiError && (
+        <div className="ai-error-notification">
+          <span className="error-icon">⚠️</span>
+          {aiError}
+          <button onClick={() => setAiError(null)} className="close-notification">×</button>
+        </div>
+      )}
+      
       <div id="paper" ref={paperRef}></div>
       <MouseTracker></MouseTracker>
+      
+      {/* Модальное окно предварительного просмотра */}
+      <NodesPreviewModal
+        isOpen={showPreviewModal}
+        onClose={handleClosePreview}
+        newNodes={previewNodes}
+        originalNodes={nodes}
+        onConfirm={handleConfirmChanges}
+        isLoading={isSaving}
+      />
+      
       {editingNode && (
         <textarea
           type="text"

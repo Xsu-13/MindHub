@@ -3,20 +3,47 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/NavigationBar.css';
 import { SendOpenRouterQuery } from '../services/urls';
 
-const NavigationBar = () => {
+const NavigationBar = ({ nodes = [], onNodesUpdate, onLoading, onError }) => {
   const [assistantQuery, setAssistantQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleMenuClick = () => {
     navigate('/');
   };
 
-  const handleAssistantSubmit = (e) => {
+  const handleAssistantSubmit = async (e) => {
     e.preventDefault();
-    if (assistantQuery.trim()) {
-      console.log('Запрос ассистенту:', assistantQuery);
-      SendOpenRouterQuery(assistantQuery, nodes);
-      setAssistantQuery('');
+    if (assistantQuery.trim() && !isLoading) {
+      setIsLoading(true);
+      if (onLoading) onLoading(true);
+      
+      try {
+        console.log('Запрос ассистенту:', assistantQuery);
+        console.log('Контекст узлов:', nodes);
+        
+        const response = await SendOpenRouterQuery(assistantQuery, nodes);
+        console.log('Ответ от AI:', response);
+        
+        if (response && response.data && response.data.success && response.data.response) {
+          // Передаем новые узлы родительскому компоненту для предварительного просмотра
+          if (onNodesUpdate) {
+            onNodesUpdate(response.data.response);
+          }
+        } else {
+          const errorMessage = response?.data?.errorMessage || 'Неизвестная ошибка при обработке запроса';
+          if (onError) onError(errorMessage);
+        }
+        
+        setAssistantQuery('');
+      } catch (error) {
+        console.error('Ошибка при отправке запроса:', error);
+        const errorMessage = error.response?.data?.errorMessage || error.message || 'Ошибка соединения с сервером';
+        if (onError) onError(errorMessage);
+      } finally {
+        setIsLoading(false);
+        if (onLoading) onLoading(false);
+      }
     }
   };
 
@@ -57,10 +84,14 @@ const NavigationBar = () => {
             <button 
               type="submit" 
               className="assistant-submit-button"
-              title="Отправить"
-              disabled={!assistantQuery.trim()}
+              title={isLoading ? "Обработка..." : "Отправить"}
+              disabled={!assistantQuery.trim() || isLoading}
             >
-              <span className="send-icon">➤</span>
+              {isLoading ? (
+                <span className="loading-icon">⌛</span>
+              ) : (
+                <span className="send-icon">➤</span>
+              )}
             </button>
           </div>
         </form>

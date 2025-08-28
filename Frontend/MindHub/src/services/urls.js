@@ -2,7 +2,7 @@ import axios from "axios";
 
 axios.defaults.withCredentials = true;
 
-let domen = "https://localhost:5001";
+let domen = "https://localhost:57618";
 
 //---------------USER----------------
 
@@ -228,7 +228,7 @@ export const SendOpenRouterQuery = async (query, nodes) => {
 
 export const fetchSendOpenRouterQuery = async (query, nodes) => {
     try{
-        return await axios.post(domen+"api/openrouter/query", {query: query, context: nodes})
+        return await axios.post(domen+"/api/openrouter/query", {query: query, context: nodes})
     }
     catch(e)
     {
