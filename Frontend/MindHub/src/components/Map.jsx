@@ -139,10 +139,7 @@ function Map() {
       nodesList.current = finalNodes;
       setShowPreviewModal(false);
       setPreviewNodes([]);
-      
-      // Перезагружаем карту с новыми данными
-      window.location.reload();
-      
+
     } catch (error) {
       console.error('Ошибка при сохранении изменений:', error);
       setAiError('Ошибка при сохранении изменений: ' + error.message);

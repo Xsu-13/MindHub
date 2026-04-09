@@ -1,8 +1,9 @@
-using Microsoft.Extensions.Options;
-using OpenRouterClient;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MindHub.Services.Nodes;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using OpenRouterClient;
 
 namespace MindHub.Services.OpenRouter
 {
@@ -92,27 +93,36 @@ namespace MindHub.Services.OpenRouter
                 // Парсим JSON ответ
                 try
                 {
-                    var jsonResponse = JsonConvert.DeserializeObject<dynamic>(assistantMessage.Replace("```json", "").Replace("```", ""));
+                    var cleanedResponse = assistantMessage.Replace("```json", "").Replace("```", "").Trim();
                     var nodes = new List<NodeDto>();
 
-                    if (jsonResponse?.nodes != null)
+                    // Пробуем десериализовать как JToken
+                    var token = JToken.Parse(cleanedResponse);
+
+                    // Получаем массив узлов (либо сам token - массив, либо token["nodes"])
+                    var nodesArray = token.Type == JTokenType.Array
+                        ? (JArray)token
+                        : token["nodes"] as JArray;
+
+                    if (nodesArray == null)
                     {
-                        foreach (var nodeJson in jsonResponse.nodes)
+                        throw new Exception("Не удалось найти массив узлов в ответе AI");
+                    }
+
+                    foreach (var nodeJson in nodesArray)
+                    {
+                        var node = new NodeDto
                         {
-                            var node = new NodeDto
-                            {
-                                // Поддерживаем как заглавные, так и строчные буквы в названиях полей
-                                Id = nodeJson.Id ?? nodeJson.id ?? 0,
-                                MapId = nodeJson.MapId ?? nodeJson.mapId ?? 0,
-                                ParentNodeId = nodeJson.ParentNodeId ?? nodeJson.parentNodeId,
-                                Title = nodeJson.Title ?? nodeJson.title ?? "",
-                                Content = nodeJson.Content ?? nodeJson.content ?? "",
-                                X = nodeJson.X ?? nodeJson.x ?? 0,
-                                Y = nodeJson.Y ?? nodeJson.y ?? 0,
-                                Style = null
-                            };
-                            nodes.Add(node);
-                        }
+                            Id = nodeJson["Id"]?.Value<int>() ?? nodeJson["id"]?.Value<int>() ?? 0,
+                            MapId = nodeJson["MapId"]?.Value<int>() ?? nodeJson["mapId"]?.Value<int>() ?? 0,
+                            ParentNodeId = nodeJson["ParentNodeId"]?.Value<int>() ?? nodeJson["parentNodeId"]?.Value<int>(),
+                            Title = nodeJson["Title"]?.Value<string>() ?? nodeJson["title"]?.Value<string>() ?? "",
+                            Content = nodeJson["Content"]?.Value<string>() ?? nodeJson["content"]?.Value<string>() ?? "",
+                            X = nodeJson["X"]?.Value<float>() ?? nodeJson["x"]?.Value<float>() ?? 0,
+                            Y = nodeJson["Y"]?.Value<float>() ?? nodeJson["y"]?.Value<float>() ?? 0,
+                            Style = null
+                        };
+                        nodes.Add(node);
                     }
 
                     return new QueryResponseDto

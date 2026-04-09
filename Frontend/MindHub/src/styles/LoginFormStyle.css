@@ -3,21 +3,22 @@
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    width: 300px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    opacity: 0; 
-    transform: translate(-50%, -60%); 
-    transition: opacity 0.5s ease, transform 0.5s ease; 
+    width: min(100%, 420px);
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
     z-index: 100;
 }
 
 .login-container.show {
     opacity: 1;
-    transform: translate(-50%, -50%);
+    transform: translateY(0);
     z-index: 200;
+}
+
+.auth-form-wrapper {
+    display: flex;
+    justify-content: center;
 }
 
 h2 {
@@ -69,4 +70,11 @@ button:hover {
     color: red;
     text-align: center;
     margin-top: 15px;
+}
+
+@media (max-width: 768px) {
+    .login-container {
+        width: min(100%, 94vw);
+        padding: 16px;
+    }
 }

@@ -8,6 +8,7 @@ function AcceptInvitePage() {
     const { token } = useParams();
     const [status, setStatus] = useState('processing'); // 'processing', 'success', 'error'
     const [errorMessage, setErrorMessage] = useState('');
+    const [retryKey, setRetryKey] = useState(0);
 
     useEffect(() => {
         const processInvitation = async () => {
@@ -30,7 +31,7 @@ function AcceptInvitePage() {
         };
 
         processInvitation();
-    }, [token, navigate]);
+    }, [token, navigate, retryKey]);
 
     const renderContent = () => {
         switch (status) {
@@ -64,7 +65,7 @@ function AcceptInvitePage() {
                         <p>{errorMessage}</p>
                         <button 
                             className="retry-button"
-                            onClick={() => window.location.reload()}
+                            onClick={() => setRetryKey((prev) => prev + 1)}
                         >
                             Попробовать снова
                         </button>

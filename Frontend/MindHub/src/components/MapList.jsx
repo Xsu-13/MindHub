@@ -14,7 +14,7 @@ function MapList() {
     const [showSignUp, setShowSignUp] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [selectedMap, setSelectedMap] = useState(null);
-    const [menuPosition, setMenuPosition] = useState({ x: 0, yы: 0 });
+    const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
     const [isRenaming, setIsRenaming] = useState(false);
     const [newTitle, setNewTitle] = useState("");
     const modalRef = useRef();
@@ -46,10 +46,34 @@ function MapList() {
         return date.toLocaleString('ru-RU', options);
     };
 
+    const closeAuthModal = () => {
+        setShowLogin(false);
+        setShowSignUp(false);
+    };
+
+    const loadMaps = async (userId) => {
+        const mapsData = await GetMapsByUserId(userId);
+        if (Array.isArray(mapsData?.data)) {
+            setMaps(mapsData.data);
+        } else {
+            console.error('Полученные данные не являются массивом:', mapsData);
+            setMaps([]);
+        }
+    };
+
+    const handleAuthSuccess = async (authenticatedUser) => {
+        setUser(authenticatedUser);
+        setIsAuthenticated(true);
+        await loadMaps(authenticatedUser.id);
+    };
+
     const handleLogout = async () => {
         await fetchLogout();
-        localStorage.clear();
-        location.reload();
+        localStorage.removeItem('accessToken');
+        setIsAuthenticated(false);
+        setUser(undefined);
+        setMaps([]);
+        closeAuthModal();
     }
 
     const handleEmptyMapClick = async () => {
@@ -125,30 +149,13 @@ function MapList() {
     };
 
     useEffect(() => {
-
-        const GetMaps = async (userId) => {
-            const mapsData = await GetMapsByUserId(userId);
-            if (Array.isArray(mapsData.data)) {
-                setMaps(mapsData.data);
-            } else {
-                console.error('Полученные данные не являются массивом:', mapsData);
-                setMaps([]);
-            }
+        if (localStorage.getItem('accessToken') && !user) {
+            setShowLogin(true);
         }
-
-        if (localStorage.getItem("user") !== null) {
-            const user = JSON.parse(localStorage.getItem("user"));
-            setIsAuthenticated(true);
-            setUser(user);
-
-            GetMaps(user.id);
-        }
-
 
         const handleClickOutside = (event) => {
             if (modalRef.current && !modalRef.current.contains(event.target)) {
-                setShowLogin(false);
-                setShowSignUp(false);
+                closeAuthModal();
             }
         };
 
@@ -174,7 +181,7 @@ function MapList() {
             templateCards.forEach(card => card.removeEventListener('click', () => { }));
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [menuRef]);
+    }, [menuRef, user]);
 
     return (
         <div className="container">
@@ -182,7 +189,7 @@ function MapList() {
                 <div>
                     <header>
                         <button className="logout" onClick={handleLogout}>Выйти</button>
-                        <h1>Добро пожаловать, {user.username}!</h1>
+                        <h1>Добро пожаловать, {user?.username}!</h1>
                     </header>
 
                     <section className="templates">
@@ -251,10 +258,15 @@ function MapList() {
             )}
 
             {(showLogin || showSignUp) && (
-                <div className={`modal ${showLogin || showSignUp ? 'show' : ''}`}>
+                <div className={`modal modal-overlay ${showLogin || showSignUp ? 'show' : ''}`}>
                     <div className="modal-content" ref={modalRef}>
-                        <span className="close" onClick={() => { setShowLogin(false); setShowSignUp(false) }}>&times;</span>
-                        <LoginForm showLogin={showLogin} showSignUp={showSignUp} closeForm={() => setShowSignUp(false)}/>
+                        <span className="close" onClick={closeAuthModal}>&times;</span>
+                        <LoginForm
+                            showLogin={showLogin}
+                            showSignUp={showSignUp}
+                            closeForm={closeAuthModal}
+                            onAuthSuccess={handleAuthSuccess}
+                        />
                     </div>
                 </div>
             )}

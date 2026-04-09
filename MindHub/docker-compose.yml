@@ -24,7 +24,12 @@ services:
       - mindhub_network
     container_name: postgres
     hostname: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
 networks:
   mindhub_network:
     driver: bridge
+
+volumes:
+  postgres_data:

@@ -1,40 +1,53 @@
 import axios from "axios";
 
 axios.defaults.withCredentials = true;
+axios.interceptors.request.use((config) => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken) {
+        config.headers = config.headers ?? {};
+        config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+    return config;
+});
 
-let domen = "https://localhost:57618";
+let domen = "https://localhost:5001";
 
 //---------------USER----------------
 
 export const LoginUser = async (email, password) => {
-    var status = await fetchLogin(email, password) ?? "Что-то пошло не так."
-    var user = status.data;
-    return user; 
+    try {
+        const response = await fetchLogin(email, password);
+        const payload = response?.data ?? {};
+        const accessToken = payload.accessToken ?? payload.token ?? null;
+        const user = payload.user ?? (payload.id ? payload : null);
+
+        if (accessToken && user) {
+            localStorage.setItem('accessToken', accessToken);
+            return { user, accessToken };
+        }
+
+        return { error: 'Не удалось авторизоваться. Некорректный ответ сервера.' };
+    } catch (e) {
+        return { error: getRusErrorMessage(e) };
+    }
 }
 
 export const SignUpUser = async (username, email, password) => {
-    var status = await fetchSignUp(username, email, password) ?? "Что-то пошло не так."
-    return status; 
+    try {
+        const status = await fetchSignUp(username, email, password);
+        return !!status;
+    } catch (e) {
+        console.log(getRusErrorMessage(e));
+        return false;
+    }
 }
 
 export const fetchLogin = async (email, password) => {
-    try{
-        return await axios.post(domen+"/api/users/login", {email: email, password: password})
-    }
-    catch(e)
-    {
-        console.log(e);
-    }
+    return await axios.post(domen+"/api/users/login", {email: email, password: password});
 }
 
 export const fetchSignUp = async (username, email, password) => {
-    try{
-        return await axios.post(domen+"/api/users/signup", {username: username, email: email, password: password})
-    }
-    catch(e)
-    {
-        console.log(e);
-    }
+    return await axios.post(domen+"/api/users/signup", {username: username, email: email, password: password});
 }
 
 export const fetchLogout = async () => {
@@ -46,6 +59,22 @@ export const fetchLogout = async () => {
         console.log(e);
     }
 }
+
+const getRusErrorMessage = (error) => {
+    const responseMessage = error?.response?.data?.message;
+    if (responseMessage) {
+        return responseMessage;
+    }
+
+    const status = error?.response?.status;
+    if (status === 400) return 'Некорректные данные запроса.';
+    if (status === 401) return 'Ошибка авторизации. Проверьте логин и пароль.';
+    if (status === 403) return 'Недостаточно прав для выполнения операции.';
+    if (status === 404) return 'Ресурс не найден.';
+    if (status >= 500) return 'Ошибка сервера. Попробуйте позже.';
+
+    return 'Что-то пошло не так. Проверьте подключение к интернету.';
+};
 
 //---------------MAP----------------
 
