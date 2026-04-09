@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MindHub.DAL;
@@ -128,18 +128,55 @@ namespace MindHub.Services.Nodes
                 var node = await FetchAsync(id);
                 if (node == null) throw new Exception("Node not found");
 
-                var version = new NodeVersion
-                {
-                    NodeId = id.ToString(),
-                    MapId = node.MapId.ToString(),
-                    Data = System.Text.Json.JsonSerializer.Serialize(node),
-                    ChangedBy = userId.ToString(),
-                    ChangedAt = DateTime.UtcNow,
-                    Action = "DELETE"
-                };
-                await _versionService.CreateAsync(version);
+                var mapNodes = await GetQueryCore()
+                    .Where(x => x.MapId == node.MapId)
+                    .ToListAsync();
 
-                await _repository.DeleteAsync(id);
+                var childrenByParent = mapNodes
+                    .Where(x => x.ParentNodeId.HasValue)
+                    .GroupBy(x => x.ParentNodeId!.Value)
+                    .ToDictionary(g => g.Key, g => g.Select(n => n.Id).ToList());
+
+                var idsToDelete = new List<int> { id };
+                var stack = new Stack<int>();
+                stack.Push(id);
+
+                while (stack.Count > 0)
+                {
+                    var currentId = stack.Pop();
+                    if (!childrenByParent.TryGetValue(currentId, out var children))
+                    {
+                        continue;
+                    }
+
+                    foreach (var childId in children)
+                    {
+                        if (!idsToDelete.Contains(childId))
+                        {
+                            idsToDelete.Add(childId);
+                            stack.Push(childId);
+                        }
+                    }
+                }
+
+                foreach (var nodeToDelete in mapNodes.Where(n => idsToDelete.Contains(n.Id)))
+                {
+                    var version = new NodeVersion
+                    {
+                        NodeId = nodeToDelete.Id.ToString(),
+                        MapId = nodeToDelete.MapId.ToString(),
+                        Data = System.Text.Json.JsonSerializer.Serialize(nodeToDelete),
+                        ChangedBy = userId.ToString(),
+                        ChangedAt = DateTime.UtcNow,
+                        Action = "DELETE"
+                    };
+                    await _versionService.CreateAsync(version);
+                }
+
+                foreach (var deleteId in idsToDelete)
+                {
+                    await _repository.DeleteAsync(deleteId);
+                }
                 await _repository.Context.SaveChangesAsync();
 
                 await transaction.CommitAsync();

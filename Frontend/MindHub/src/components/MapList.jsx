@@ -63,6 +63,7 @@ function MapList() {
 
     const handleAuthSuccess = async (authenticatedUser) => {
         setUser(authenticatedUser);
+        sessionStorage.setItem('user', JSON.stringify(authenticatedUser));
         setIsAuthenticated(true);
         await loadMaps(authenticatedUser.id);
     };
@@ -70,6 +71,7 @@ function MapList() {
     const handleLogout = async () => {
         await fetchLogout();
         localStorage.removeItem('accessToken');
+        sessionStorage.removeItem('user');
         setIsAuthenticated(false);
         setUser(undefined);
         setMaps([]);
@@ -149,7 +151,19 @@ function MapList() {
     };
 
     useEffect(() => {
-        if (localStorage.getItem('accessToken') && !user) {
+        const savedUser = sessionStorage.getItem('user');
+        if (savedUser && !user) {
+            try {
+                const parsedUser = JSON.parse(savedUser);
+                if (parsedUser?.id) {
+                    setUser(parsedUser);
+                    setIsAuthenticated(true);
+                    loadMaps(parsedUser.id);
+                }
+            } catch {
+                sessionStorage.removeItem('user');
+            }
+        } else if (localStorage.getItem('accessToken') && !user) {
             setShowLogin(true);
         }
 

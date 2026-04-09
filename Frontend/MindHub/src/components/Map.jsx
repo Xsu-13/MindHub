@@ -62,6 +62,7 @@ function Map() {
   const [previewNodes, setPreviewNodes] = useState([]);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const zoomScaleRef = useRef(1);
 
   const mapId = location.state?.mapId;
 
@@ -186,8 +187,13 @@ function Map() {
       cellViewNamespace: namespace,
       preventDefaultViewAction: false
     });
+    paper.scale(1, 1);
+    paper.translate(0, 0);
+    zoomScaleRef.current = 1;
 
     paperInstance.current = paper;
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
     const deleteButton = elementTools.Button.extend({
       name: 'delete-button',
       options: {
@@ -218,10 +224,37 @@ function Map() {
           const currentElement = this.model;
 
           try {
-            await DeleteNode(currentElement.backId);
-            await removeNode(currentElement.backId);
-            currentElement.remove();
-            delete nodesMap.current[currentElement.backId];
+            const targetId = currentElement.backId;
+            const allNodes = nodesList.current || [];
+            const idsToDelete = new Set([targetId]);
+            const stack = [targetId];
+
+            while (stack.length > 0) {
+              const currentId = stack.pop();
+              allNodes
+                .filter((node) => node.parentNodeId === currentId)
+                .forEach((child) => {
+                  if (!idsToDelete.has(child.id)) {
+                    idsToDelete.add(child.id);
+                    stack.push(child.id);
+                  }
+                });
+            }
+
+            await DeleteNode(targetId);
+
+            for (const idToDelete of idsToDelete) {
+              await removeNode(idToDelete);
+              const nodeView = nodesMap.current[idToDelete];
+              if (nodeView) {
+                nodeView.remove();
+                delete nodesMap.current[idToDelete];
+              }
+            }
+
+            const filteredNodes = allNodes.filter((node) => !idsToDelete.has(node.id));
+            setNodes(filteredNodes);
+            nodesList.current = filteredNodes;
           } catch (error) {
             console.error('Ошибка удаления узла:', error);
           }
@@ -385,6 +418,56 @@ function Map() {
         }, 100);
       }
     });
+    paper.on('blank:pointerdown', function (evt) {
+      isPanning = true;
+      panStart = { x: evt.clientX, y: evt.clientY };
+      paper.el.style.cursor = 'grabbing';
+    });
+
+    paper.on('blank:pointermove', function (evt) {
+      if (!isPanning) return;
+      const dx = evt.clientX - panStart.x;
+      const dy = evt.clientY - panStart.y;
+      const translation = paper.translate();
+      paper.translate(translation.tx + dx, translation.ty + dy);
+      panStart = { x: evt.clientX, y: evt.clientY };
+    });
+
+    const stopPanning = () => {
+      isPanning = false;
+      paper.el.style.cursor = 'default';
+    };
+
+    paper.on('blank:pointerup', stopPanning);
+    window.addEventListener('mouseup', stopPanning);
+
+    const handleWheel = (event) => {
+      event.preventDefault();
+
+      const currentScale = zoomScaleRef.current;
+      const delta = event.deltaY > 0 ? -0.1 : 0.1;
+      const newScale = Math.min(2.5, Math.max(0.4, currentScale + delta));
+      if (newScale === currentScale) return;
+
+      const rect = paper.el.getBoundingClientRect();
+      const offsetX = event.clientX - rect.left;
+      const offsetY = event.clientY - rect.top;
+      const translation = paper.translate();
+      const worldX = (offsetX - translation.tx) / currentScale;
+      const worldY = (offsetY - translation.ty) / currentScale;
+      const nextTx = offsetX - worldX * newScale;
+      const nextTy = offsetY - worldY * newScale;
+
+      paper.scale(newScale, newScale);
+      paper.translate(nextTx, nextTy);
+      zoomScaleRef.current = newScale;
+    };
+
+    paper.el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      paper.el.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('mouseup', stopPanning);
+    };
   }, [nodes]);
 
   const handleInputChange = (event) => {
@@ -507,8 +590,11 @@ export function CreateElement(nodesMap, mapId, innertext, paper, graph, position
   foreignObject.appendChild(nameContainer);
 
   const resizeObserver = new ResizeObserver(() => {
-    const { width, height } = nameContainer.getBoundingClientRect();
-    node.resize(width + 12, height + 40);
+    // Используем внутренние размеры контента, а не boundingClientRect,
+    // чтобы zoom/scale бумаги не влиял на итоговый размер узла.
+    const contentWidth = Math.max(nameContainer.scrollWidth, nameContainer.offsetWidth, 120);
+    const contentHeight = Math.max(nameContainer.scrollHeight, nameContainer.offsetHeight, 40);
+    node.resize(contentWidth + 12, contentHeight + 24);
   });
 
   resizeObserver.observe(nameContainer);
