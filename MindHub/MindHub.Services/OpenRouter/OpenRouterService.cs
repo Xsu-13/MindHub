@@ -48,11 +48,38 @@ namespace MindHub.Services.OpenRouter
                 var temperature = request.Temperature ?? 0.7;
                 var maxTokens = request.MaxTokens ?? 2000;
 
-                // Формируем промпт для структурирования мыслей
-                var systemPrompt = "Ты — помощник по структурированию мыслей. Ты помогаешь пользователям расширять и углублять их ментальные карты.\n" +
-                                   "Твои ответы должны быть краткими, четкими и готовыми для использования в качестве названий узлов карты.\n" +
-                                   "Отвечай ТОЛЬКО в формате JSON, как указано ниже строго с теми же полями, все поля должны быть заполнены (координаты в том числе).\n\n" +
-                                   "Учти контекст.\n\n";
+                var systemPrompt =
+                    "Ты — ИИ-ассистент ментальной карты.\n" +
+                    "ОСНОВНЫЕ ПРАВИЛА:\n" +
+                    "1) По возможности НЕ задавай уточняющих вопросов и строй результат по лучшему предположению.\n" +
+                    "2) Названия узлов (title) всегда на русском языке.\n" +
+                    "3) Поле content всегда содержит код или псевдокод (без объяснений вне кода).\n" +
+                    "4) Отвечай строго JSON-объектом одного из форматов:\n" +
+                    "   a) Для результата:\n" +
+                    "   {\n" +
+                    "     \"type\": \"nodes\",\n" +
+                    "     \"clarificationQuestion\": null,\n" +
+                    "     \"nodes\": [\n" +
+                    "       {\n" +
+                    "         \"id\": 0,\n" +
+                    "         \"mapId\": 0,\n" +
+                    "         \"parentNodeId\": 0,\n" +
+                    "         \"title\": \"Название на русском\",\n" +
+                    "         \"content\": \"код или псевдокод\",\n" +
+                    "         \"x\": 0,\n" +
+                    "         \"y\": 0\n" +
+                    "       }\n" +
+                    "     ]\n" +
+                    "   }\n" +
+                    "   b) Если без уточнения действительно нельзя:\n" +
+                    "   {\n" +
+                    "     \"type\": \"clarification\",\n" +
+                    "     \"clarificationQuestion\": \"УТОЧНЕНИЕ: ...\",\n" +
+                    "     \"nodes\": []\n" +
+                    "   }\n" +
+                    "5) Если задаешь вопрос, начинай его строго с префикса \"УТОЧНЕНИЕ:\".\n" +
+                    "6) Никаких markdown-блоков и текста вне JSON.\n\n" +
+                    "Учти текущий контекст узлов и пользовательский запрос.\n\n";
 
                 // Формируем контекст из узлов
                 var contextJson = "";
@@ -99,6 +126,22 @@ namespace MindHub.Services.OpenRouter
                     // Пробуем десериализовать как JToken
                     var token = JToken.Parse(cleanedResponse);
 
+                    var responseType = token["type"]?.Value<string>()?.Trim().ToLowerInvariant();
+                    var clarificationQuestion = token["clarificationQuestion"]?.Value<string>()?.Trim();
+                    if (responseType == "clarification")
+                    {
+                        return new QueryResponseDto
+                        {
+                            Success = true,
+                            Response = new List<NodeDto>(),
+                            Model = model,
+                            RequiresClarification = true,
+                            ClarificationQuestion = string.IsNullOrWhiteSpace(clarificationQuestion)
+                                ? "УТОЧНЕНИЕ: Уточните, пожалуйста, задачу."
+                                : clarificationQuestion
+                        };
+                    }
+
                     // Получаем массив узлов (либо сам token - массив, либо token["nodes"])
                     var nodesArray = token.Type == JTokenType.Array
                         ? (JArray)token
@@ -122,6 +165,16 @@ namespace MindHub.Services.OpenRouter
                             Y = nodeJson["Y"]?.Value<float>() ?? nodeJson["y"]?.Value<float>() ?? 0,
                             Style = null
                         };
+
+                        if (string.IsNullOrWhiteSpace(node.Title))
+                        {
+                            node.Title = "Новый узел";
+                        }
+
+                        if (string.IsNullOrWhiteSpace(node.Content))
+                        {
+                            node.Content = "// Добавьте код или описание алгоритма";
+                        }
                         nodes.Add(node);
                     }
 
@@ -129,7 +182,9 @@ namespace MindHub.Services.OpenRouter
                     {
                         Success = true,
                         Response = nodes,
-                        Model = model
+                        Model = model,
+                        RequiresClarification = false,
+                        ClarificationQuestion = null
                     };
                 }
                 catch (JsonException ex)

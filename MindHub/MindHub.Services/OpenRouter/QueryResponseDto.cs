@@ -9,5 +9,7 @@ namespace MindHub.Services.OpenRouter
         public string? ErrorMessage { get; set; }
         public List<NodeDto>? Response { get; set; }
         public string? Model { get; set; }
+        public bool RequiresClarification { get; set; }
+        public string? ClarificationQuestion { get; set; }
     }
 }
