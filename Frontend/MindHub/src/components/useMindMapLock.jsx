@@ -14,25 +14,19 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance, 
     const node = nodeMapRef.current[nodeId];
     
     if (node) {
+      const currentNodeData = nodesList()?.find(item => item.id == nodeId);
+      const savedBackgroundColor = currentNodeData?.style?.backgroundColor;
+      const fallbackColor = currentNodeData?.parentNodeId === null ? '#ff5252' : '#FFFFFF';
+      const targetFill = isLocked ? '#f5f5f5' : (savedBackgroundColor || fallbackColor);
       node.attr({
         body: {
-          fill: isLocked ? '#f5f5f5' : '#FFFFFF',
+          fill: targetFill,
           stroke: isLocked ? '#999' : '#C94A46'
         },
         label: {
           fill: isLocked ? '#999' : '#353535'
         }
       });
-      console.log(nodesList)
-      if (nodesList().find(item => item.id == nodeId).parentNodeId === null)
-        {
-          console.log(isLocked)
-          node.attr({
-            body: {
-              fill: isLocked ? '#f5f5f5' : '#ff5252'
-            }
-          });
-        }
     }
   }, []);
 

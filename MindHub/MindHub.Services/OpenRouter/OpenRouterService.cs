@@ -81,7 +81,6 @@ namespace MindHub.Services.OpenRouter
                     "6) Никаких markdown-блоков и текста вне JSON.\n\n" +
                     "Учти текущий контекст узлов и пользовательский запрос.\n\n";
 
-                // Формируем контекст из узлов
                 var contextJson = "";
                 if (request.context != null && request.context.Any())
                 {
@@ -117,13 +116,11 @@ namespace MindHub.Services.OpenRouter
 
                 _logger.LogInformation("Получен ответ от OpenRouter API: {Response}", assistantMessage);
 
-                // Парсим JSON ответ
                 try
                 {
                     var cleanedResponse = assistantMessage.Replace("```json", "").Replace("```", "").Trim();
                     var nodes = new List<NodeDto>();
 
-                    // Пробуем десериализовать как JToken
                     var token = JToken.Parse(cleanedResponse);
 
                     var responseType = token["type"]?.Value<string>()?.Trim().ToLowerInvariant();
@@ -142,7 +139,6 @@ namespace MindHub.Services.OpenRouter
                         };
                     }
 
-                    // Получаем массив узлов (либо сам token - массив, либо token["nodes"])
                     var nodesArray = token.Type == JTokenType.Array
                         ? (JArray)token
                         : token["nodes"] as JArray;

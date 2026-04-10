@@ -154,6 +154,42 @@ function Map() {
     setPreviewNodes([]);
   };
 
+  const updateNodeColor = (nodeId, color) => {
+    const nodeModel = nodesMap.current[nodeId];
+    if (!nodeModel) return;
+    nodeModel.attr('body/fill', color);
+  };
+
+  const updateNodeStyleInState = (nodeId, stylePatch) => {
+    const updatedNodes = (nodesList.current || []).map((node) => {
+      if (node.id !== nodeId) return node;
+      return {
+        ...node,
+        style: {
+          ...(node.style || {}),
+          ...stylePatch
+        }
+      };
+    });
+    nodesList.current = updatedNodes;
+  };
+
+  const updateNodeSizeByFont = (nodeId, nextFontSize, prevFontSize = 14) => {
+    const nodeModel = nodesMap.current[nodeId];
+    if (!nodeModel) return;
+    const currentSize = nodeModel.size();
+    const baseFontSize = 14;
+    const fontDelta = Math.max(0, nextFontSize - baseFontSize);
+    const diff = nextFontSize - prevFontSize;
+    const minWidth = 180 + fontDelta * 4;
+    const minHeight = 50 + fontDelta * 2;
+    const nextWidth = diff > 0 ? currentSize.width + diff * 3 : currentSize.width;
+    nodeModel.resize(
+      Math.max(nextWidth, minWidth),
+      Math.max(currentSize.height, minHeight)
+    );
+  };
+
   useEffect(() => {
     const GetNodes = async (mapId) => {
       const nodesData = await GetNodesByMapId(mapId);
@@ -328,7 +364,12 @@ function Map() {
             "",
             false,
             "py",
-            14
+            14,
+            "#FFFFFF",
+            node.data?.style?.id ?? null,
+            updateNodeColor,
+            updateNodeStyleInState,
+            updateNodeSizeByFont
           );
 
           const newLink = new shapes.standard.Link();
@@ -355,7 +396,12 @@ function Map() {
         node.content,
         false,
         node.style?.fontFamily,
-        node.style?.fontSize || 14
+        node.style?.fontSize || 14,
+        node.style?.backgroundColor || "#FFFFFF",
+        node.style?.id ?? null,
+        updateNodeColor,
+        updateNodeStyleInState,
+        updateNodeSizeByFont
       );
       nodeMap[node.id] = newNode;
     });
@@ -606,7 +652,12 @@ export function CreateElement(
   initialCode = '',
   isLocked = false,
   initialLanguage = 'py',
-  initialFontSize = 14
+  initialFontSize = 14,
+  initialBackgroundColor = '#FFFFFF',
+  initialStyleId = null,
+  onNodeColorChange = null,
+  onNodeStyleChange = null,
+  onNodeFontSizeChange = null
 ) {
   const node = new Card();
   node.position(position.x, position.y);
@@ -634,6 +685,11 @@ export function CreateElement(
       initCardId={nodeId}
       initialLanguage={initialLanguage}
       initialFontSize={initialFontSize}
+      initialBackgroundColor={initialBackgroundColor}
+      initialStyleId={initialStyleId}
+      onNodeColorChange={onNodeColorChange}
+      onNodeStyleChange={onNodeStyleChange}
+      onNodeFontSizeChange={onNodeFontSizeChange}
     />
   );
   foreignObject.appendChild(nameContainer);

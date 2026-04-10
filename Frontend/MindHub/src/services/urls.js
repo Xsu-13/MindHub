@@ -196,6 +196,7 @@ export const fetchPatchNode = async (nodeId, patch) => {
     catch(e)
     {
         console.log(e);
+        throw e;
     }
 }
 
@@ -211,6 +212,39 @@ export const fetchDeleteNode = async (nodeId) => {
     catch(e)
     {
         console.log(e);
+    }
+}
+
+//---------------STYLE----------------
+export const CreateStyle = async (style) => {
+    var createdStyle = await fetchCreateStyle(style) ?? "Что-то пошло не так."
+    return createdStyle;
+}
+
+export const fetchCreateStyle = async (style) => {
+    try{
+        return await axios.post(domen+"/api/styles", style)
+    }
+    catch(e)
+    {
+        console.log(e);
+        throw e;
+    }
+}
+
+export const PatchStyle = async (styleId, stylePatch) => {
+    var style = await fetchPatchStyle(styleId, stylePatch) ?? "Что-то пошло не так."
+    return style;
+}
+
+export const fetchPatchStyle = async (styleId, patch) => {
+    try{
+        return await axios.patch(domen+"/api/styles/"+styleId, patch)
+    }
+    catch(e)
+    {
+        console.log(e);
+        throw e;
     }
 }
 
