@@ -309,13 +309,27 @@ function Map() {
               backgroundColor: "#FFFFFF",
               textColor: "#353535",
               borderColor: "#C94A46",
-              fontFamily: "Sans"
+              fontFamily: "py",
+              fontSize: 14
             }
           });
 
           await addNode(node.data.id, newX, newY, currentElement.backId);
 
-          const newRect = CreateElement(nodesMap, mapId, "New Node", paper, graph, { x: newX, y: newY }, "#FFFFFF", node.data.id);
+          const newRect = CreateElement(
+            nodesMap,
+            mapId,
+            "New Node",
+            paper,
+            graph,
+            { x: newX, y: newY },
+            "#FFFFFF",
+            node.data.id,
+            "",
+            false,
+            "py",
+            14
+          );
 
           const newLink = new shapes.standard.Link();
           newLink.set('z', 0);
@@ -329,7 +343,20 @@ function Map() {
 
     const nodeMap = {};
     nodes.forEach((node) => {
-      var newNode = CreateElement(nodesMap, mapId, node.title, paper, graph, { x: node.x, y: node.y }, node.style == null ? "#FFFFFF" : node.style.backgroundColor, node.id, node.content);
+      var newNode = CreateElement(
+        nodesMap,
+        mapId,
+        node.title,
+        paper,
+        graph,
+        { x: node.x, y: node.y },
+        node.style == null ? "#FFFFFF" : node.style.backgroundColor,
+        node.id,
+        node.content,
+        false,
+        node.style?.fontFamily,
+        node.style?.fontSize || 14
+      );
       nodeMap[node.id] = newNode;
     });
 
@@ -567,7 +594,20 @@ function Map() {
   )
 }
 
-export function CreateElement(nodesMap, mapId, innertext, paper, graph, position, backgroundColor = "#FFFFFF", nodeId, initialCode = '', isLocked = false) {
+export function CreateElement(
+  nodesMap,
+  mapId,
+  innertext,
+  paper,
+  graph,
+  position,
+  backgroundColor = "#FFFFFF",
+  nodeId,
+  initialCode = '',
+  isLocked = false,
+  initialLanguage = 'py',
+  initialFontSize = 14
+) {
   const node = new Card();
   node.position(position.x, position.y);
   node.resize(180, 50);
@@ -586,7 +626,16 @@ export function CreateElement(nodesMap, mapId, innertext, paper, graph, position
   let nameContainer = document.createElement('div');
   let root = createRoot(nameContainer);
   //root.render(<CardContent mapId={mapId} initialName={innertext} initialCode={initialCode} initCardId={nodeId} lockNode={() => requestLock(nodeId)} unlockNode={() => releaseLock(nodeId)} />);
-  root.render(<CardContent mapId={mapId} initialName={innertext} initialCode={initialCode} initCardId={nodeId} />);
+  root.render(
+    <CardContent
+      mapId={mapId}
+      initialName={innertext}
+      initialCode={initialCode}
+      initCardId={nodeId}
+      initialLanguage={initialLanguage}
+      initialFontSize={initialFontSize}
+    />
+  );
   foreignObject.appendChild(nameContainer);
 
   const resizeObserver = new ResizeObserver(() => {

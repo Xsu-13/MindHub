@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import CodeEditor from "@uiw/react-textarea-code-editor";
 
-export default function EditableCodeBlock({ initialCode = '', onCodeChange}) {
+export default function EditableCodeBlock({ initialCode = '', language = 'py', fontSize = 14, onCodeChange }) {
     const textRef = useRef();
     const [code, setCode] = React.useState(initialCode);
 
@@ -33,15 +33,15 @@ export default function EditableCodeBlock({ initialCode = '', onCodeChange}) {
         <CodeEditor
             value={code}
             ref={textRef}
-            language="py"
-            placeholder="Please enter python code."
+            language={language}
+            placeholder={`Введите код (${language})`}
             onChange={handleChange}
             padding={15}
             style={{
                 backgroundColor: "#f9fafb",
                 fontFamily:
                     "IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
-                fontSize: 14,
+                fontSize: `${fontSize}px`,
                 marginBottom: 20,
                 width: '100%',
                 resize: 'none',

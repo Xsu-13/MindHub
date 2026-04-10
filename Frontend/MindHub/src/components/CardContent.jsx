@@ -1,13 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/CardTitle.css';
 import EditableCodeBlock from './EditableCodeBlock';
-import { PatchNode, GetNodeById } from '../services/urls.js';
+import { PatchNode } from '../services/urls.js';
 import { HubConnectionBuilder } from '@microsoft/signalr';
 
-export default function CardContent({nodeMapRef = null, mapId ='', initialName = '', initialCode = '', initCardId = null, lockNode = null, unlockNode = null }) {
+const LANGUAGE_OPTIONS = ['py', 'javascript', 'sql', 'java', 'csharp', 'php', 'go'];
+const FONT_SIZE_OPTIONS = [12, 14, 16, 18, 20, 24];
+
+export default function CardContent({
+    mapId = '',
+    initialName = '',
+    initialCode = '',
+    initCardId = null,
+    initialLanguage = 'py',
+    initialFontSize = 14
+}) {
     const [isCodeBlockVisible, setIsCodeBlockVisible] = useState(false);
     const [name, setName] = React.useState(initialName);
     const [code, setCode] = React.useState(initialCode);
+    const [language, setLanguage] = React.useState(initialLanguage);
+    const [fontSize, setFontSize] = React.useState(initialFontSize);
     const [cardId, setCardId] = React.useState(initCardId);
     const [connection, setConnection] = useState(null);
 
@@ -15,7 +27,9 @@ export default function CardContent({nodeMapRef = null, mapId ='', initialName =
         setName(initialName);
         setCardId(initCardId);
         setCode(initialCode);
-    }, [initialName, initialCode, initCardId]);
+        setLanguage(initialLanguage || 'py');
+        setFontSize(initialFontSize || 14);
+    }, [initialName, initialCode, initCardId, initialLanguage, initialFontSize]);
 
     useEffect(() => {
         const newConnection = new HubConnectionBuilder()
@@ -45,11 +59,6 @@ export default function CardContent({nodeMapRef = null, mapId ='', initialName =
 
     const toggleCodeBlock = async () => {
         setIsCodeBlockVisible(!isCodeBlockVisible);
-        // if (!isCodeBlockVisible) {
-        //     lockNode(initCardId);
-        // }
-        // else
-        //     unlockNode(initCardId);
     };
 
     async function onCodeChange(code) {
@@ -68,11 +77,31 @@ export default function CardContent({nodeMapRef = null, mapId ='', initialName =
         }
       }
 
+    const handleLanguageChange = async (event) => {
+        const newLanguage = event.target.value;
+        setLanguage(newLanguage);
+        await PatchNode(cardId, {
+            style: {
+                fontFamily: newLanguage
+            }
+        });
+    };
+
+    const handleFontSizeChange = async (event) => {
+        const newFontSize = Number(event.target.value);
+        setFontSize(newFontSize);
+        await PatchNode(cardId, {
+            style: {
+                fontSize: newFontSize
+            }
+        });
+    };
+
     return (
         <>
             <div className='card_title'>
                 <div className='card_name'>
-                    {name}
+                    <span style={{ fontSize: `${fontSize}px` }}>{name}</span>
                 </div>
                 <div className='button_content'>
                     <button className="burger_menu" onClick={toggleCodeBlock}>
@@ -81,7 +110,53 @@ export default function CardContent({nodeMapRef = null, mapId ='', initialName =
                 </div>
             </div>
 
-            {isCodeBlockVisible && <EditableCodeBlock initialCode={code} onCodeChange={onCodeChange} />}
+            {isCodeBlockVisible && (
+                <div className="node-editor-wrapper">
+                    <div className="node-top-toolbar">
+                        <div className="node-toolbar-item">
+                            <label className="node-editor-label" htmlFor={`node-language-${cardId}`}>
+                                Язык
+                            </label>
+                            <select
+                                id={`node-language-${cardId}`}
+                                className="node-language-select"
+                                value={language}
+                                onChange={handleLanguageChange}
+                            >
+                                {LANGUAGE_OPTIONS.map((item) => (
+                                    <option key={item} value={item}>
+                                        {item}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="node-toolbar-item">
+                            <label className="node-editor-label" htmlFor={`node-font-size-${cardId}`}>
+                                Размер
+                            </label>
+                            <select
+                                id={`node-font-size-${cardId}`}
+                                className="node-font-size-select"
+                                value={fontSize}
+                                onChange={handleFontSizeChange}
+                            >
+                                {FONT_SIZE_OPTIONS.map((size) => (
+                                    <option key={size} value={size}>
+                                        {size}px
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                    <EditableCodeBlock
+                        initialCode={code}
+                        language={language}
+                        fontSize={fontSize}
+                        onCodeChange={onCodeChange}
+                    />
+                </div>
+            )}
         </>
     );
 }
