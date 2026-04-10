@@ -2,14 +2,22 @@
     margin: 10px;
     color: #12006b;
     text-align: center;
-    display: flex;
-    justify-content: space-between;
+    display: inline-flex;
+    justify-content: flex-start;
     align-items: center; 
+    gap: 8px;
+    width: auto;
+    min-width: 0;
+    max-width: none;
 }
 
 .card_name{
-    width: 80%;
-    word-wrap: break-word;
+    display: inline-block;
+    flex: 0 0 auto;
+    white-space: pre;
+    overflow-wrap: normal;
+    word-break: keep-all;
+    hyphens: none;
 }
 
 .burger_menu {
@@ -33,7 +41,9 @@
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    margin-left: auto;
+    margin-left: 2px;
+    min-width: 24px;
+    flex-shrink: 0;
 }
 
 .node-editor-wrapper {

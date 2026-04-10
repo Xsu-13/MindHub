@@ -103,6 +103,13 @@
 .node_input{
     border: none;
     outline: none;
-    color: inherit;
-    background-color: transparent;
+    color: #111827;
+    background-color: #ffffff;
+    white-space: pre;
+    overflow-x: auto;
+    overflow-y: hidden;
+    resize: none;
+    border-radius: 6px;
+    line-height: 1.35;
+    min-height: 34px;
 }

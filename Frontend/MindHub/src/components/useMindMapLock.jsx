@@ -94,7 +94,7 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance, 
         const elementView = paperInstance.current.findViewByModel(node);
 
         const cardNameElement = elementView.el.querySelector('.card_name');
-        cardNameElement.innerHTML = newNodeName;
+        cardNameElement.textContent = newNodeName;
       }
     });
 

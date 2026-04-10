@@ -63,6 +63,8 @@ function Map() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const zoomScaleRef = useRef(1);
+  const [editorPosition, setEditorPosition] = useState({ top: 0, left: 0, width: 150 });
+  const titleInputRef = useRef(null);
 
   const mapId = location.state?.mapId;
 
@@ -545,11 +547,20 @@ function Map() {
 
   const handleInputChange = (event) => {
     setInputValue(event.target.value);
+    requestAnimationFrame(() => {
+      if (titleInputRef.current) {
+        titleInputRef.current.style.height = 'auto';
+        titleInputRef.current.style.height = `${titleInputRef.current.scrollHeight}px`;
+      }
+    });
   };
 
   const handleInputBlur = async () => {
     if (editingNode) {
       editingNode.attr('label', { text: inputValue });
+      await PatchNode(editingNode.backId, { title: inputValue });
+      await updateNodeName(editingNode.backId, inputValue);
+      await releaseLock(editingNode.backId);
       setEditingNode(null);
       editingNodeRef.current = null;
       setInputValue('');
@@ -558,13 +569,30 @@ function Map() {
 
   const handleInputKeyDown = async (event) => {
     if (event.key === 'Enter') {
+      if (event.ctrlKey) {
+        event.preventDefault();
+        const start = event.target.selectionStart;
+        const end = event.target.selectionEnd;
+        const nextValue = `${inputValue.substring(0, start)}\n${inputValue.substring(end)}`;
+        setInputValue(nextValue);
+        setTimeout(() => {
+          event.target.selectionStart = event.target.selectionEnd = start + 1;
+          if (titleInputRef.current) {
+            titleInputRef.current.style.height = 'auto';
+            titleInputRef.current.style.height = `${titleInputRef.current.scrollHeight}px`;
+          }
+        }, 0);
+        return;
+      }
+
+      event.preventDefault();
       if (editingNode) {
         const elementView = paperInstance.current.findViewByModel(editingNode);
         editingNode.attr('label', { text: inputValue });
 
         if (elementView) {
           const cardNameElement = elementView.el.querySelector('.card_name');
-          cardNameElement.innerHTML = inputValue;
+          cardNameElement.textContent = inputValue;
         }
 
         await releaseLock(editingNode.backId);
@@ -577,6 +605,45 @@ function Map() {
       }
     }
   };
+
+  useEffect(() => {
+    if (!editingNode || !paperInstance.current || !paperRef.current) return;
+
+    const updateEditorPosition = () => {
+      const paper = paperInstance.current;
+      const paperRect = paperRef.current.getBoundingClientRect();
+      const pos = editingNode.position();
+      const translation = paper.translate();
+      const scaleState = paper.scale();
+      const scaleX = scaleState?.sx ?? zoomScaleRef.current ?? 1;
+      const scaleY = scaleState?.sy ?? zoomScaleRef.current ?? 1;
+
+      setEditorPosition({
+        left: paperRect.left + translation.tx + pos.x * scaleX + 14,
+        top: paperRect.top + translation.ty + (pos.y + 14) * scaleY,
+        width: Math.max(160, 170 * scaleX)
+      });
+    };
+
+    updateEditorPosition();
+    const intervalId = window.setInterval(updateEditorPosition, 80);
+    window.addEventListener('resize', updateEditorPosition);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('resize', updateEditorPosition);
+    };
+  }, [editingNode]);
+
+  useEffect(() => {
+    if (!editingNode) return;
+    requestAnimationFrame(() => {
+      if (titleInputRef.current) {
+        titleInputRef.current.style.height = 'auto';
+        titleInputRef.current.style.height = `${titleInputRef.current.scrollHeight}px`;
+      }
+    });
+  }, [editingNode, inputValue]);
 
   const inputStyle = {
     position: 'absolute',
@@ -627,12 +694,15 @@ function Map() {
       {editingNode && (
         <textarea
           type="text"
+          ref={titleInputRef}
           className='node_input'
-          style={{ ...inputStyle, width: 150, top: editingNode.position().y + 80, left: editingNode.position().x + 20 }} // Учитываем высоту навигационной панели
+          style={{ ...inputStyle, width: editorPosition.width, top: editorPosition.top, left: editorPosition.left }}
           value={inputValue}
           onChange={handleInputChange}
           onBlur={handleInputBlur}
           onKeyDown={handleInputKeyDown}
+          wrap="off"
+          rows={1}
           autoFocus
         />
       )}
