@@ -8,7 +8,13 @@ const NavigationBar = ({ nodes = [], onNodesUpdate, onLoading, onError }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
+  const [selectedModel, setSelectedModel] = useState('openai/gpt-4o-mini');
   const navigate = useNavigate();
+  const modelOptions = [
+    { value: 'deepseek/deepseek-v3.2', label: 'DeepSeek v3.2' },
+    { value: 'google/gemini-3-flash-preview', label: 'Gemini 3 Flash Preview' },
+    { value: 'openai/gpt-4o-mini', label: 'GPT-4o Mini' }
+  ];
   const quickPrompts = [
     'Создай карту на тему "REST API на ASP.NET Core" с основными узлами.',
     'Добавь узлы по теме "React hooks" и свяжи их с текущими.',
@@ -32,7 +38,7 @@ const NavigationBar = ({ nodes = [], onNodesUpdate, onLoading, onError }) => {
         console.log('Запрос ассистенту:', queryText);
         console.log('Контекст узлов:', nodes);
         
-        const response = await SendOpenRouterQuery(queryText, nodes);
+        const response = await SendOpenRouterQuery(queryText, nodes, selectedModel);
         console.log('Ответ от AI:', response);
         
         if (response && response.data && response.data.success) {
@@ -108,6 +114,18 @@ const NavigationBar = ({ nodes = [], onNodesUpdate, onLoading, onError }) => {
             </div>
 
             <div className="assistant-quick-prompts">
+              <select
+                className="assistant-model-select"
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                title="Выберите нейронку"
+              >
+                {modelOptions.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
               {quickPrompts.map((prompt) => (
                 <button
                   key={prompt}

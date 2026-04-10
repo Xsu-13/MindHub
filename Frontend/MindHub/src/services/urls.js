@@ -284,14 +284,18 @@ export const fetchAcceptInvite = async (token) => {
 
 //---------------AI ASSISTENT----------------
 
-export const SendOpenRouterQuery = async (query, nodes) => {
-    var nodes = await fetchSendOpenRouterQuery(query, nodes) ?? "Что-то пошло не так."
-    return nodes; 
+export const SendOpenRouterQuery = async (query, nodes, model = null) => {
+    var result = await fetchSendOpenRouterQuery(query, nodes, model) ?? "Что-то пошло не так."
+    return result; 
 }
 
-export const fetchSendOpenRouterQuery = async (query, nodes) => {
+export const fetchSendOpenRouterQuery = async (query, nodes, model = null) => {
     try{
-        return await axios.post(domen+"/api/openrouter/query", {query: query, context: nodes})
+        const payload = { query: query, context: nodes };
+        if (model) {
+            payload.model = model;
+        }
+        return await axios.post(domen+"/api/openrouter/query", payload)
     }
     catch(e)
     {

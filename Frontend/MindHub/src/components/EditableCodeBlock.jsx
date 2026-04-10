@@ -31,6 +31,7 @@ export default function EditableCodeBlock({ initialCode = '', language = 'py', f
 
     return (
         <CodeEditor
+            className="node-code-editor"
             value={code}
             ref={textRef}
             language={language}
@@ -38,7 +39,8 @@ export default function EditableCodeBlock({ initialCode = '', language = 'py', f
             onChange={handleChange}
             padding={15}
             style={{
-                backgroundColor: "#f9fafb",
+                backgroundColor: "#ffffff",
+                color: "#0f172a",
                 fontFamily:
                     "IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
                 fontSize: `${fontSize}px`,
@@ -47,7 +49,8 @@ export default function EditableCodeBlock({ initialCode = '', language = 'py', f
                 resize: 'none',
                 overflow: 'hidden',
                 minHeight: '100px',
-                fontFamily: 'inherit'
+                fontFamily: 'inherit',
+                fontWeight: 500
             }}
         />
     );

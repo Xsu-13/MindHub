@@ -92,7 +92,30 @@ function Map() {
   };
 
   const handleNodesUpdate = (newNodes) => {
-    setPreviewNodes(newNodes);
+    const defaultStyle = {
+      backgroundColor: "#FFFFFF",
+      textColor: "#353535",
+      borderColor: "#C94A46",
+      fontFamily: "py",
+      fontSize: 14
+    };
+
+    const normalizedNodes = (newNodes || []).map((incomingNode) => {
+      const existingNode = nodesList.current.find((node) => node.id === incomingNode.id);
+      if (existingNode) {
+        return {
+          ...incomingNode,
+          style: incomingNode.style ?? existingNode.style ?? null
+        };
+      }
+
+      return {
+        ...incomingNode,
+        style: incomingNode.style ?? defaultStyle
+      };
+    });
+
+    setPreviewNodes(normalizedNodes);
     setShowPreviewModal(true);
   };
 
@@ -111,9 +134,20 @@ function Map() {
             title: newNode.title,
             content: newNode.content
           });
-          updatedNodes.push({ ...existingNode, ...newNode });
+          updatedNodes.push({
+            ...existingNode,
+            ...newNode,
+            style: newNode.style ?? existingNode.style ?? null
+          });
         } else {
           // Создаем новый узел
+          const defaultStyle = {
+            backgroundColor: "#FFFFFF",
+            textColor: "#353535",
+            borderColor: "#C94A46",
+            fontFamily: "py",
+            fontSize: 14
+          };
           const createdNode = await CreateNode({
             mapId: mapId,
             parentNodeId: newNode.parentNodeId,
@@ -121,7 +155,7 @@ function Map() {
             content: newNode.content,
             x: newNode.x,
             y: newNode.y,
-            style: newNode.style
+            style: newNode.style ?? defaultStyle
           });
           updatedNodes.push(createdNode.data);
         }

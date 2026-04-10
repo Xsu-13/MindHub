@@ -113,3 +113,15 @@
     line-height: 1.35;
     min-height: 34px;
 }
+
+.node-code-editor .w-tc-editor-preview,
+.node-code-editor .w-tc-editor-text {
+    color: #0f172a !important;
+}
+
+.node-code-editor .token.comment,
+.node-code-editor .token.prolog,
+.node-code-editor .token.doctype,
+.node-code-editor .token.cdata {
+    color: #475569 !important;
+}

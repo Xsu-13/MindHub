@@ -152,13 +152,13 @@ namespace MindHub.Services.OpenRouter
                     {
                         var node = new NodeDto
                         {
-                            Id = nodeJson["Id"]?.Value<int>() ?? nodeJson["id"]?.Value<int>() ?? 0,
-                            MapId = nodeJson["MapId"]?.Value<int>() ?? nodeJson["mapId"]?.Value<int>() ?? 0,
-                            ParentNodeId = nodeJson["ParentNodeId"]?.Value<int>() ?? nodeJson["parentNodeId"]?.Value<int>(),
+                            Id = nodeJson["Id"]?.Value<int?>() ?? nodeJson["id"]?.Value<int?>() ?? 0,
+                            MapId = nodeJson["MapId"]?.Value<int?>() ?? nodeJson["mapId"]?.Value<int?>() ?? 0,
+                            ParentNodeId = nodeJson["ParentNodeId"]?.Value<int?>() ?? nodeJson["parentNodeId"]?.Value<int?>(),
                             Title = nodeJson["Title"]?.Value<string>() ?? nodeJson["title"]?.Value<string>() ?? "",
                             Content = nodeJson["Content"]?.Value<string>() ?? nodeJson["content"]?.Value<string>() ?? "",
-                            X = nodeJson["X"]?.Value<float>() ?? nodeJson["x"]?.Value<float>() ?? 0,
-                            Y = nodeJson["Y"]?.Value<float>() ?? nodeJson["y"]?.Value<float>() ?? 0,
+                            X = nodeJson["X"]?.Value<float?>() ?? nodeJson["x"]?.Value<float?>() ?? 0,
+                            Y = nodeJson["Y"]?.Value<float?>() ?? nodeJson["y"]?.Value<float?>() ?? 0,
                             Style = null
                         };
 
