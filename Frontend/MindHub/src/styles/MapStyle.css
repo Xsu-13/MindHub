@@ -57,6 +57,20 @@
     to { transform: rotate(360deg); }
 }
 
+/* Стили для свернутых узлов */
+.collapsed-node {
+    opacity: 0.7 !important;
+}
+
+.collapsed-node .card-content-root {
+    pointer-events: none !important;
+}
+
+.collapsed-node circle {
+    stroke-dasharray: 5, 5 !important;
+    stroke-width: 2 !important;
+}
+
 .node {
     display: inline-block;
     padding: 10px;

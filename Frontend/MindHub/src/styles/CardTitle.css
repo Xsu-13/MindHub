@@ -53,6 +53,25 @@
     background-color: #7070703e;
 }
 
+.collapse_button {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #ffffff00;
+    color: #373737;
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0;
+}
+
+.collapse_button:hover {
+    background-color: #7070703e;
+}
+
 .button_content {
     display: flex;
     justify-content: center;

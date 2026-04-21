@@ -96,6 +96,11 @@
   background-color: #fffbeb;
 }
 
+.node-item.deleted-node {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
 .node-header {
   display: flex;
   justify-content: space-between;
@@ -124,6 +129,11 @@
 
 .node-badge.modified {
   background-color: #f59e0b;
+  color: white;
+}
+
+.node-badge.deleted {
+  background-color: #ef4444;
   color: white;
 }
 
@@ -168,6 +178,14 @@
   background-color: #f0f9ff;
   border: 1px solid #bae6fd;
   color: #0369a1;
+}
+
+.content-text.deleted {
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  text-decoration: line-through;
+  opacity: 0.7;
 }
 
 .modal-footer {

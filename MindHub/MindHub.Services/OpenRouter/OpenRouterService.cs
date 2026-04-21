@@ -122,34 +122,8 @@ namespace MindHub.Services.OpenRouter
                 }
                 catch (JsonException ex)
                 {
-                    _logger.LogWarning(ex, "JSON parsing failed, trying self-repair");
-                    try
-                    {
-                        var repairPrompt =
-                            "Исправь JSON-ответ. Верни строго валидный JSON формата из инструкции, без markdown и текста.\n" +
-                            $"Ошибка парсинга: {ex.Message}\n" +
-                            "Невалидный ответ:\n" + assistantMessage;
-
-                        var repairResponse = await _client.Chat
-                            .WithModel(model)
-                            .WithTemperature(0.1f)
-                            .WithMaxTokens(maxTokens)
-                            .AddUserMessage(repairPrompt)
-                            .SendAsync();
-
-                        var repairedMessage = repairResponse?.Choices?.FirstOrDefault()?.Message?.Content ?? "";
-                        var parsed = ParseAssistantResponse(repairedMessage, model, "AI вернул невалидный JSON, запустили автоисправление ответа.");
-                        return parsed;
-                    }
-                    catch (Exception retryEx)
-                    {
-                        _logger.LogError(retryEx, "Repair attempt failed");
-                        return new QueryResponseDto
-                        {
-                            Success = false,
-                            ErrorMessage = $"Ответ AI не в правильном JSON формате. Ошибка: {ex.Message}. Ответ: {assistantMessage}"
-                        };
-                    }
+                    _logger.LogWarning(ex, "JSON parsing failed, trying auto-repair. Error: {ErrorMessage}", ex.Message);
+                    return await AttemptJsonRepair(assistantMessage, model, ex, maxTokens);
                 }
                 catch (Exception ex)
                 {
@@ -172,12 +146,100 @@ namespace MindHub.Services.OpenRouter
             }
         }
 
+        private async Task<QueryResponseDto> AttemptJsonRepair(string originalMessage, string model, JsonException initialException, int maxTokens, int retryCount = 0, int maxRetries = 3)
+        {
+            if (retryCount >= maxRetries)
+            {
+                _logger.LogError("Max JSON repair attempts ({MaxRetries}) exceeded", maxRetries);
+                return new QueryResponseDto
+                {
+                    Success = false,
+                    ErrorMessage = $"Ответ AI не в правильном JSON формате после {maxRetries} попыток автоисправления. Последняя ошибка: {initialException.Message}"
+                };
+            }
+
+            try
+            {
+                var repairPrompt =
+                    $"Попытка исправления #{retryCount + 1}/{maxRetries}\n" +
+                    "Исправь JSON-ответ. Верни ТОЛЬКО строго валидный JSON формата из инструкции, без markdown, комментариев и текста.\n" +
+                    $"Ошибка парсинга: {initialException.Message}\n" +
+                    "Невалидный ответ:\n" + originalMessage + "\n\n" +
+                    "Убедись что:\n" +
+                    "1) JSON скобки и кавычки сбалансированы\n" +
+                    "2) Нет запятых после последних элементов в массивах\n" +
+                    "3) Все строки заключены в двойные кавычки\n" +
+                    "4) Нет управляющих символов вне JSON\n" +
+                    "5) Ответ начинается с { и заканчивается }";
+
+                _logger.LogInformation("Отправка запроса на исправление JSON (попытка {Attempt}/{MaxAttempts})", retryCount + 1, maxRetries);
+
+                var repairResponse = await _client.Chat
+                    .WithModel(model)
+                    .WithTemperature(0.1f)
+                    .WithMaxTokens(Math.Min(maxTokens, 2000))
+                    .AddUserMessage(repairPrompt)
+                    .SendAsync();
+
+                var repairedMessage = repairResponse?.Choices?.FirstOrDefault()?.Message?.Content ?? "";
+
+                if (string.IsNullOrWhiteSpace(repairedMessage))
+                {
+                    _logger.LogWarning("Repair response was empty, retrying...");
+                    return await AttemptJsonRepair(originalMessage, model, initialException, maxTokens, retryCount + 1, maxRetries);
+                }
+
+                _logger.LogInformation("Received repaired response (attempt {Attempt}): {Response}", retryCount + 1, repairedMessage);
+
+                try
+                {
+                    var parsed = ParseAssistantResponse(repairedMessage, model,
+                        $"AI вернул невалидный JSON на исходный запрос, успешно исправлено с попытки {retryCount + 1}/{maxRetries}.");
+                    return parsed;
+                }
+                catch (JsonException innerEx)
+                {
+                    _logger.LogWarning(innerEx, "Repair attempt {Attempt} failed, retrying... Error: {ErrorMessage}", retryCount + 1, innerEx.Message);
+                    return await AttemptJsonRepair(repairedMessage, model, innerEx, maxTokens, retryCount + 1, maxRetries);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during JSON repair attempt {Attempt}", retryCount + 1);
+                return await AttemptJsonRepair(originalMessage, model, initialException, maxTokens, retryCount + 1, maxRetries);
+            }
+        }
+
         private QueryResponseDto ParseAssistantResponse(string assistantMessage, string model, string? recoveryMessage)
         {
-            var cleanedResponse = assistantMessage.Replace("```json", "").Replace("```", "").Trim();
-            var nodes = new List<NodeDto>();
+            // Улучшенная очистка JSON от markdown и комментариев
+            var cleanedResponse = assistantMessage
+                .Replace("```json", "")
+                .Replace("```", "")
+                .Trim();
 
-            var token = JToken.Parse(cleanedResponse);
+            // Удаляем текст до { и после }
+            var jsonStartIndex = cleanedResponse.IndexOf('{');
+            var jsonEndIndex = cleanedResponse.LastIndexOf('}');
+
+            if (jsonStartIndex < 0 || jsonEndIndex < 0 || jsonStartIndex > jsonEndIndex)
+            {
+                throw new JsonException("JSON структура не найдена в ответе. Ответ должен начинаться с '{' и заканчиваться '}'");
+            }
+
+            cleanedResponse = cleanedResponse.Substring(jsonStartIndex, jsonEndIndex - jsonStartIndex + 1).Trim();
+
+            JToken token;
+            try
+            {
+                token = JToken.Parse(cleanedResponse);
+            }
+            catch (JsonException ex)
+            {
+                // Попыткаإضة простые исправления
+                cleanedResponse = CleanUpJson(cleanedResponse);
+                token = JToken.Parse(cleanedResponse);
+            }
 
             var responseType = token["type"]?.Value<string>()?.Trim().ToLowerInvariant();
             var clarificationQuestion = token["clarificationQuestion"]?.Value<string>()?.Trim();
@@ -202,9 +264,10 @@ namespace MindHub.Services.OpenRouter
 
             if (nodesArray == null)
             {
-                throw new Exception("Не удалось найти массив узлов в ответе AI");
+                throw new Exception("Не удалось найти массив узлов в ответе AI. Ответ должен содержать поле 'nodes' с массивом узлов");
             }
 
+            var nodes = new List<NodeDto>();
             foreach (var nodeJson in nodesArray)
             {
                 var node = new NodeDto
@@ -240,6 +303,24 @@ namespace MindHub.Services.OpenRouter
                 ClarificationQuestion = null,
                 RecoveryMessage = recoveryMessage
             };
+        }
+
+        private string CleanUpJson(string jsonString)
+        {
+            // Попытка исправления общих ошибок JSON
+            var result = jsonString;
+
+            // Удаляем управляющие символы которые не должны быть в JSON
+            result = System.Text.RegularExpressions.Regex.Replace(result, @"[\x00-\x08\x0B\x0C\x0E-\x1F]", "");
+
+            // Пытаемся исправить незакрытые строки в конце
+            var openQuoteCount = result.Count(c => c == '"') - (result.Count(c => c == '\\') / 2);
+            if (openQuoteCount % 2 != 0)
+            {
+                result = result.TrimEnd(',', ' ', '\n', '\r') + "\"";
+            }
+
+            return result;
         }
     }
 }

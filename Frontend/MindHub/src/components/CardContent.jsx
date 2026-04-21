@@ -19,13 +19,16 @@ export default function CardContent({
     initialBackgroundColor = '#FFFFFF',
     initialStyleId = null,
     initialIsCodeBlockOpen = false,
+    initialIsCollapsed = false,
     onNodeColorChange = null,
     onNodeStyleChange = null,
     onNodeFontSizeChange = null,
     onCodeBlockVisibilityChange = null,
-    onNodeStyleRealtime = null
+    onNodeStyleRealtime = null,
+    onNodeCollapseChange = null
 }) {
     const [isCodeBlockVisible, setIsCodeBlockVisible] = useState(initialIsCodeBlockOpen);
+    const [isCollapsed, setIsCollapsed] = useState(initialIsCollapsed);
     const [name, setName] = React.useState(initialName);
     const [code, setCode] = React.useState(initialCode);
     const [language, setLanguage] = React.useState(initialLanguage);
@@ -50,8 +53,9 @@ export default function CardContent({
         setSelectedColor(initialBackgroundColor || '#FFFFFF');
         setStyleId(initialStyleId);
         setIsCodeBlockVisible(!!initialIsCodeBlockOpen);
+        setIsCollapsed(!!initialIsCollapsed);
         initializedNodeIdRef.current = initCardId;
-    }, [initialName, initialCode, initCardId, initialLanguage, initialFontSize, initialBackgroundColor, initialStyleId, initialIsCodeBlockOpen]);
+    }, [initialName, initialCode, initCardId, initialLanguage, initialFontSize, initialBackgroundColor, initialStyleId, initialIsCodeBlockOpen, initialIsCollapsed]);
 
     const patchStyleSafe = async (patch) => {
         let resolvedStyleId = styleId;
@@ -139,6 +143,15 @@ export default function CardContent({
         setIsCodeBlockVisible(nextVisible);
         if (onCodeBlockVisibilityChange) {
             onCodeBlockVisibilityChange(cardId, nextVisible);
+        }
+    };
+
+    const toggleNodeCollapse = async () => {
+        const nextCollapsed = !isCollapsed;
+        setIsCollapsed(nextCollapsed);
+        await PatchNode(cardId, { isCollapsed: nextCollapsed });
+        if (onNodeCollapseChange) {
+            onNodeCollapseChange(cardId, nextCollapsed);
         }
     };
 
@@ -240,6 +253,13 @@ export default function CardContent({
                     <span ref={titleRef} style={{ fontSize: `${fontSize}px` }}>{name}</span>
                 </div>
                 <div className='button_content'>
+                    <button 
+                        className="collapse_button" 
+                        onClick={toggleNodeCollapse}
+                        title={isCollapsed ? "Развернуть ветку" : "Свернуть ветку"}
+                    >
+                        {isCollapsed ? '▶' : '▼'}
+                    </button>
                     <button className="burger_menu" onClick={toggleCodeBlock}>
                         &#9776;
                     </button>

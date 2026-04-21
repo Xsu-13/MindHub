@@ -111,7 +111,8 @@ function Map() {
           style: incomingNode.style ?? existingNode.style ?? null,
           width: incomingNode.width ?? existingNode.width ?? 180,
           height: incomingNode.height ?? existingNode.height ?? 70,
-          isCodeBlockOpen: incomingNode.isCodeBlockOpen ?? existingNode.isCodeBlockOpen ?? false
+          isCodeBlockOpen: incomingNode.isCodeBlockOpen ?? existingNode.isCodeBlockOpen ?? false,
+          isCollapsed: incomingNode.isCollapsed ?? existingNode.isCollapsed ?? false
         };
       }
 
@@ -120,39 +121,57 @@ function Map() {
         style: incomingNode.style ?? defaultStyle,
         width: incomingNode.width ?? 180,
         height: incomingNode.height ?? 70,
-        isCodeBlockOpen: incomingNode.isCodeBlockOpen ?? false
+        isCodeBlockOpen: incomingNode.isCodeBlockOpen ?? false,
+        isCollapsed: incomingNode.isCollapsed ?? false
       };
     });
 
-    setPreviewNodes(normalizedNodes);
+    // Добавляем информацию об удаленных нодах
+    const newNodesMap = new Set(normalizedNodes.map(n => n.id));
+    const deletedNodes = (nodesList.current || []).filter(n => !newNodesMap.has(n.id));
+
+    setPreviewNodes({
+      added: normalizedNodes.filter(n => !nodesList.current.some(existing => existing.id === n.id)),
+      modified: normalizedNodes.filter(n => nodesList.current.some(existing => 
+        existing.id === n.id && 
+        (existing.title !== n.title || existing.content !== n.content)
+      )),
+      deleted: deletedNodes
+    });
     setShowPreviewModal(true);
   };
 
   const handleConfirmChanges = async () => {
     setIsSaving(true);
     try {
-      // Обновляем существующие узлы и создаем новые
       const updatedNodes = [];
       
-      for (const newNode of previewNodes) {
-        const existingNode = nodes.find(n => n.id === newNode.id);
-        
-        if (existingNode) {
-          // Обновляем существующий узел
-          await PatchNode(newNode.id, {
-            title: newNode.title,
-            content: newNode.content,
-            width: newNode.width ?? existingNode.width ?? 180,
-            height: newNode.height ?? existingNode.height ?? 70,
-            isCodeBlockOpen: newNode.isCodeBlockOpen ?? existingNode.isCodeBlockOpen ?? false
-          });
-          updatedNodes.push({
-            ...existingNode,
-            ...newNode,
-            style: newNode.style ?? existingNode.style ?? null
-          });
-        } else {
-          // Создаем новый узел
+      // Обрабатываем modified ноды
+      if (previewNodes.modified) {
+        for (const newNode of previewNodes.modified) {
+          const existingNode = nodes.find(n => n.id === newNode.id);
+          
+          if (existingNode) {
+            await PatchNode(newNode.id, {
+              title: newNode.title,
+              content: newNode.content,
+              width: newNode.width ?? existingNode.width ?? 180,
+              height: newNode.height ?? existingNode.height ?? 70,
+              isCodeBlockOpen: newNode.isCodeBlockOpen ?? existingNode.isCodeBlockOpen ?? false,
+              isCollapsed: newNode.isCollapsed ?? existingNode.isCollapsed ?? false
+            });
+            updatedNodes.push({
+              ...existingNode,
+              ...newNode,
+              style: newNode.style ?? existingNode.style ?? null
+            });
+          }
+        }
+      }
+
+      // Обрабатываем добавленные (added) ноды
+      if (previewNodes.added) {
+        for (const newNode of previewNodes.added) {
           const defaultStyle = {
             backgroundColor: "#FFFFFF",
             textColor: "#353535",
@@ -170,14 +189,24 @@ function Map() {
             width: newNode.width ?? 180,
             height: newNode.height ?? 70,
             isCodeBlockOpen: newNode.isCodeBlockOpen ?? false,
+            isCollapsed: newNode.isCollapsed ?? false,
             style: newNode.style ?? defaultStyle
           });
           updatedNodes.push(createdNode.data);
         }
       }
+
+      // Обрабатываем удаленные (deleted) ноды - удаляем их
+      if (previewNodes.deleted) {
+        for (const deletedNode of previewNodes.deleted) {
+          await DeleteNode(deletedNode.id);
+        }
+      }
       
       // Обновляем состояние узлов
-      const finalNodes = [...nodes];
+      let finalNodes = [...nodes];
+      
+      // Добавляем обновленные и созданные ноды
       updatedNodes.forEach(updatedNode => {
         const index = finalNodes.findIndex(n => n.id === updatedNode.id);
         if (index >= 0) {
@@ -187,10 +216,16 @@ function Map() {
         }
       });
       
+      // Удаляем удаленные ноды изState
+      if (previewNodes.deleted) {
+        const deletedIds = new Set(previewNodes.deleted.map(n => n.id));
+        finalNodes = finalNodes.filter(n => !deletedIds.has(n.id));
+      }
+      
       setNodes(finalNodes);
       nodesList.current = finalNodes;
       setShowPreviewModal(false);
-      setPreviewNodes([]);
+      setPreviewNodes({});
 
     } catch (error) {
       console.error('Ошибка при сохранении изменений:', error);
@@ -203,6 +238,161 @@ function Map() {
   const handleClosePreview = () => {
     setShowPreviewModal(false);
     setPreviewNodes([]);
+  };
+
+  const handleNodeCollapseChange = async (nodeId, isCollapsed) => {
+    // Обновляем состояние в nodesList
+    const updatedNodes = nodesList.current.map(node => 
+      node.id === nodeId ? { ...node, isCollapsed } : node
+    );
+    nodesList.current = updatedNodes;
+
+    try {
+      await PatchNode(nodeId, { isCollapsed });
+    } catch (e) {
+      console.error('Ошибка обновления collapse:', e);
+    }
+
+    updateTreeVisibility();
+  };
+    // // Обновляем ноды в состоянии
+    // const allNodes = updatedNodes;
+
+    // // Функция для рекурсивного получения всех потомков
+    // const getAllDescendants = (parentId) => {
+    //   const descendants = [];
+    //   const stack = [parentId];
+
+    //   while (stack.length > 0) {
+    //     const currentId = stack.pop();
+    //     const childNodes = allNodes.filter(node => node.parentNodeId === currentId);
+
+    //     childNodes.forEach(child => {
+    //       descendants.push(child.id);
+    //       stack.push(child.id);
+    //     });
+    //   }
+
+    //   return descendants;
+    // };
+
+  //   // Функция для обновления видимости узла и его потомков
+  //   const updateNodeVisibility = (targetNodeId, shouldBeVisible) => {
+  //     const nodeElement = nodesMap.current[targetNodeId];
+  //     if (!nodeElement) return;
+
+  //     if (shouldBeVisible) {
+  //       // Показываем узел
+  //       nodeElement.attr('root/display', 'block');
+  //       nodeElement.attr('body/pointer-events', 'auto');
+  //       nodeElement.attr('body/stroke-dasharray', ''); // Убираем пунктир
+
+  //       // Показываем связанные ссылки
+  //       const links = graphInstance.current?.getLinks() || [];
+  //       links.forEach(link => {
+  //         const sourceId = link.getSourceElement()?.backId;
+  //         const targetId = link.getTargetElement()?.backId;
+
+  //         if (sourceId === targetNodeId || targetId === targetNodeId) {
+  //           const otherNodeId = sourceId === targetNodeId ? targetId : sourceId;
+  //           const otherNode = allNodes.find(n => n.id === otherNodeId);
+
+  //           // Показываем ссылку только если другой узел тоже видим
+  //           if (otherNode && nodesMap.current[otherNodeId]?.attr('body/visibility') === 'visible') {
+  //             link.attr('line/visibility', 'visible');
+  //           }
+  //         }
+  //       });
+  //     } else {
+  //       // Скрываем узел
+  //       nodeElement.attr('root/display', 'none');
+  //       nodeElement.attr('root/pointer-events', 'none');
+  //       nodeElement.attr('body/stroke-dasharray', '5,5'); // Добавляем пунктир для визуальной индикации
+
+  //       // Скрываем все связанные ссылки
+  //       const links = graphInstance.current?.getLinks() || [];
+  //       links.forEach(link => {
+  //         const sourceId = link.getSourceElement()?.backId;
+  //         const targetId = link.getTargetElement()?.backId;
+
+  //         if (sourceId === targetNodeId || targetId === targetNodeId) {
+  //           link.attr('line/visibility', 'hidden');
+  //         }
+  //       });
+  //     }
+  //   };
+
+  //   if (isCollapsed) {
+  //     // Скрываем всех потомков рекурсивно
+  //     const descendants = getAllDescendants(nodeId);
+  //     descendants.forEach(descendantId => {
+  //       updateNodeVisibility(descendantId, false);
+  //     });
+  //   } else {
+  //     // Показываем прямых детей, если они не свернуты сами по себе
+  //     const directChildren = allNodes.filter(node => node.parentNodeId === nodeId);
+  //     directChildren.forEach(child => {
+  //       // Показываем ребенка только если он не свернут
+  //       if (!child.isCollapsed) {
+  //         updateNodeVisibility(child.id, true);
+  //         // Рекурсивно показываем потомков этого ребенка, если они должны быть видимы
+  //         const childDescendants = getAllDescendants(child.id);
+  //         childDescendants.forEach(descendantId => {
+  //           const descendantNode = allNodes.find(n => n.id === descendantId);
+  //           if (descendantNode && !descendantNode.isCollapsed) {
+  //             updateNodeVisibility(descendantId, true);
+  //           }
+  //         });
+  //       }
+  //     });
+  //   }
+  // };
+
+  const updateTreeVisibility = () => {
+    const allNodes = nodesList.current || [];
+    const links = graphInstance.current?.getLinks() || [];
+
+    const visibilityMap = {};
+
+    // --- считаем видимость ---
+    allNodes.forEach(node => {
+      visibilityMap[node.id] = isNodeVisibleSafe(node.id, allNodes);
+    });
+
+    // --- применяем к нодам ---
+    allNodes.forEach(node => {
+      const nodeElement = nodesMap.current[node.id];
+      if (!nodeElement) return;
+
+      nodeElement.attr('root/display', visibilityMap[node.id] ? 'block' : 'none');
+    });
+
+    // --- применяем к линкам ---
+    links.forEach(link => {
+      const sourceId = link.getSourceElement()?.backId;
+      const targetId = link.getTargetElement()?.backId;
+
+      const visible =
+        visibilityMap[sourceId] && visibilityMap[targetId];
+
+      // 🔥 ВАЖНО: всегда явно выставляем
+      link.attr('line/display', visible ? 'block' : 'none');
+    });
+  };
+
+  const isNodeVisibleSafe = (nodeId, allNodes) => {
+    let current = allNodes.find(n => n.id === nodeId);
+
+    while (current?.parentNodeId) {
+      const parent = allNodes.find(n => n.id === current.parentNodeId);
+      if (!parent) break;
+
+      if (parent.isCollapsed) return false;
+
+      current = parent;
+    }
+
+    return true;
   };
 
   const updateNodeColor = (nodeId, color) => {
@@ -459,11 +649,13 @@ function Map() {
             node.data?.width ?? 180,
             node.data?.height ?? 70,
             node.data?.isCodeBlockOpen ?? false,
+            node.data?.isCollapsed ?? false,
             updateNodeColor,
             updateNodeStyleInState,
             updateNodeSizeByFont,
             handleCodeBlockVisibilityChange,
-            updateNodeStyleRealtime
+            updateNodeStyleRealtime,
+            handleNodeCollapseChange
           );
 
           const newLink = new shapes.standard.Link();
@@ -496,11 +688,13 @@ function Map() {
         node.width ?? 180,
         node.height ?? 70,
         node.isCodeBlockOpen ?? false,
+        node.isCollapsed ?? false,
         updateNodeColor,
         updateNodeStyleInState,
         updateNodeSizeByFont,
         handleCodeBlockVisibilityChange,
-        updateNodeStyleRealtime
+        updateNodeStyleRealtime,
+        handleNodeCollapseChange
       );
       nodeMap[node.id] = newNode;
     });
@@ -516,6 +710,29 @@ function Map() {
           newLink.target(currentNode);
           newLink.addTo(graph);
         }
+      }
+    });
+
+    // Применяем состояние коллапсирования для всех свернутых узлов
+    nodes.forEach((node) => {
+      if (node.isCollapsed) {
+        const nodeElement = nodesMap[node.id];
+        if (nodeElement) {
+          nodeElement.attr('body/visibility', 'hidden');
+          nodeElement.attr('body/pointer-events', 'none');
+          nodeElement.attr('body/stroke-dasharray', '5,5');
+        }
+
+        // Скрываем все связанные ссылки
+        const links = graph.getLinks();
+        links.forEach(link => {
+          const sourceId = link.getSourceElement()?.backId;
+          const targetId = link.getTargetElement()?.backId;
+
+          if (sourceId === node.id || targetId === node.id) {
+            link.attr('line/visibility', 'hidden');
+          }
+        });
       }
     });
 
@@ -839,11 +1056,13 @@ export function CreateElement(
   initialWidth = 180,
   initialHeight = 70,
   initialIsCodeBlockOpen = false,
+  initialIsCollapsed = false,
   onNodeColorChange = null,
   onNodeStyleChange = null,
   onNodeFontSizeChange = null,
   onCodeBlockVisibilityChange = null,
-  onNodeStyleRealtime = null
+  onNodeStyleRealtime = null,
+  onNodeCollapseChange = null
 ) {
   const node = new Card();
   node.position(position.x, position.y);
@@ -942,6 +1161,7 @@ export function CreateElement(
       initialBackgroundColor={initialBackgroundColor}
       initialStyleId={initialStyleId}
       initialIsCodeBlockOpen={initialIsCodeBlockOpen}
+      initialIsCollapsed={initialIsCollapsed}
       onNodeColorChange={onNodeColorChange}
       onNodeStyleChange={onNodeStyleChange}
       onNodeFontSizeChange={onNodeFontSizeChange}
@@ -952,6 +1172,7 @@ export function CreateElement(
           onCodeBlockVisibilityChange(currentNodeId, isVisible);
         }
       }}
+      onNodeCollapseChange={onNodeCollapseChange}
     />
   );
   nameContainer.appendChild(contentContainer);

@@ -20,6 +20,7 @@ namespace MindHub.Services.Nodes
         public float Width { get; set; } = 180;
         public float Height { get; set; } = 70;
         public bool IsCodeBlockOpen { get; set; } = false;
+        public bool IsCollapsed { get; set; } = false;
         public StyleDto? Style { get; set; }
     }
 }

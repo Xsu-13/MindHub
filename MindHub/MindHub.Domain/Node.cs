@@ -20,6 +20,7 @@ namespace MindHub.DAL
         public float Width { get; set; } = 180;
         public float Height { get; set; } = 70;
         public bool IsCodeBlockOpen { get; set; } = false;
+        public bool IsCollapsed { get; set; } = false;
         public int? StyleId { get; set; }
         public Map Map { get; set; }
         public Node ParentNode { get; set; }

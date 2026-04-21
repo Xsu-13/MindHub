@@ -4,7 +4,7 @@ import '../styles/NodesPreviewModal.css';
 const NodesPreviewModal = ({ 
   isOpen, 
   onClose, 
-  newNodes = [], 
+  newNodes = {}, 
   originalNodes = [], 
   onConfirm, 
   isLoading = false 
@@ -16,13 +16,19 @@ const NodesPreviewModal = ({
     return content.length > 100 ? content.substring(0, 100) + '...' : content;
   };
 
-  const getChangedNodes = () => {
+  // Обработка как старого формата (массив), так и нового (объект с категориями)
+  let added = [];
+  let modified = [];
+  let deleted = [];
+
+  if (Array.isArray(newNodes)) {
+    // Старый формат - поддерживаем для совместимости
     const originalMap = {};
     originalNodes.forEach(node => {
       originalMap[node.id] = node;
     });
 
-    return newNodes.map(newNode => {
+    newNodes.forEach(newNode => {
       const original = originalMap[newNode.id];
       const isModified = original && (
         original.title !== newNode.title || 
@@ -30,18 +36,29 @@ const NodesPreviewModal = ({
       );
       const isNew = !original;
       
-      return {
-        ...newNode,
-        isModified,
-        isNew,
-        originalContent: original?.content || ''
-      };
+      if (isModified) {
+        modified.push({
+          ...newNode,
+          isModified: true,
+          originalContent: original?.content || ''
+        });
+      } else if (isNew) {
+        added.push({
+          ...newNode,
+          isNew: true
+        });
+      }
     });
-  };
+  } else {
+    // Новый формат
+    added = newNodes.added || [];
+    modified = newNodes.modified || [];
+    deleted = newNodes.deleted || [];
+  }
 
-  const changedNodes = getChangedNodes();
-  const modifiedCount = changedNodes.filter(n => n.isModified).length;
-  const newCount = changedNodes.filter(n => n.isNew).length;
+  const totalAddedCount = added.length;
+  const totalModifiedCount = modified.length;
+  const totalDeletedCount = deleted.length;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -54,48 +71,81 @@ const NodesPreviewModal = ({
         <div className="modal-body">
           <div className="changes-summary">
             <p>
-              <strong>Изменений:</strong> {modifiedCount} узлов обновлено, {newCount} узлов добавлено
+              <strong>Итого изменений:</strong> {totalModifiedCount} обновлено
+              {totalAddedCount > 0 && `, ${totalAddedCount} добавлено`}
+              {totalDeletedCount > 0 && `, ${totalDeletedCount} удалено`}
             </p>
           </div>
           
           <div className="nodes-preview">
-            {changedNodes.map((node) => (
+            {/* Обновленные ноды */}
+            {modified.map((node) => (
               <div 
                 key={node.id} 
-                className={`node-item ${node.isNew ? 'new-node' : ''} ${node.isModified ? 'modified-node' : ''}`}
+                className="node-item modified-node"
               >
                 <div className="node-header">
                   <span className="node-title">{node.title}</span>
-                  {node.isNew && <span className="node-badge new">НОВЫЙ</span>}
-                  {node.isModified && <span className="node-badge modified">ИЗМЕНЕН</span>}
+                  <span className="node-badge modified">ИЗМЕНЕН</span>
                 </div>
                 
                 <div className="node-content">
-                  {node.isModified && (
-                    <>
-                      <div className="content-section">
-                        <span className="content-label">Было:</span>
-                        <div className="content-text original">
-                          {formatNodeContent(node.originalContent)}
-                        </div>
-                      </div>
-                      <div className="content-section">
-                        <span className="content-label">Стало:</span>
-                        <div className="content-text updated">
-                          {formatNodeContent(node.content)}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  
-                  {node.isNew && (
-                    <div className="content-section">
-                      <span className="content-label">Описание:</span>
-                      <div className="content-text new">
-                        {formatNodeContent(node.content)}
-                      </div>
+                  <div className="content-section">
+                    <span className="content-label">Было:</span>
+                    <div className="content-text original">
+                      {formatNodeContent(node.originalContent)}
                     </div>
-                  )}
+                  </div>
+                  <div className="content-section">
+                    <span className="content-label">Стало:</span>
+                    <div className="content-text updated">
+                      {formatNodeContent(node.content)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Новые ноды */}
+            {added.map((node) => (
+              <div 
+                key={node.id} 
+                className="node-item new-node"
+              >
+                <div className="node-header">
+                  <span className="node-title">{node.title}</span>
+                  <span className="node-badge new">НОВЫЙ</span>
+                </div>
+                
+                <div className="node-content">
+                  <div className="content-section">
+                    <span className="content-label">Описание:</span>
+                    <div className="content-text new">
+                      {formatNodeContent(node.content)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Удаленные ноды */}
+            {deleted.map((node) => (
+              <div 
+                key={node.id} 
+                className="node-item deleted-node"
+              >
+                <div className="node-header">
+                  <span className="node-title">{node.title}</span>
+                  <span className="node-badge deleted">УДАЛЕН</span>
+                </div>
+                
+                <div className="node-content">
+                  <div className="content-section">
+                    <span className="content-label">Было:</span>
+                    <div className="content-text deleted">
+                      {formatNodeContent(node.content)}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
