@@ -658,12 +658,18 @@ function Map() {
             handleNodeCollapseChange
           );
 
+          nodesList.current.push(node.data);
+
+
           const newLink = new shapes.standard.Link();
-          newLink.set('z', 0);
-          newLink.source(currentElement);
-          newLink.target(newRect);
+          newLink.set('z', -1);
+
+          newLink.source({ id: currentElement.id });
+          newLink.target({ id: newRect.id });
+
           newLink.addTo(graph);
 
+          updateTreeVisibility();
         }
       }
     });
