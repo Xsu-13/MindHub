@@ -487,6 +487,12 @@ function Map() {
     })
     
     paper.on('element:pointerclick', async function (elementView) {
+      window.dispatchEvent(
+        new CustomEvent('mindhub:active-node-changed', {
+          detail: { nodeId: String(elementView.model.backId) }
+        })
+      );
+
       if (currentElementView && currentElementView !== elementView) {
         currentElementView.removeTools();
         setEditingNode(null);
@@ -528,6 +534,11 @@ function Map() {
       }
     });
     paper.on('blank:pointerdown', function (evt) {
+      window.dispatchEvent(
+        new CustomEvent('mindhub:active-node-changed', {
+          detail: { nodeId: null }
+        })
+      );
       isPanning = true;
       panStart = { x: evt.clientX, y: evt.clientY };
       paper.el.style.cursor = 'grabbing';
@@ -779,8 +790,69 @@ export function CreateElement(
   let foreignObject = nodeElement.querySelector('foreignObject');
 
   let nameContainer = document.createElement('div');
-  let root = createRoot(nameContainer);
-  //root.render(<CardContent mapId={mapId} initialName={innertext} initialCode={initialCode} initCardId={nodeId} lockNode={() => requestLock(nodeId)} unlockNode={() => releaseLock(nodeId)} />);
+  nameContainer.style.position = 'relative';
+  nameContainer.style.width = '100%';
+  nameContainer.style.height = '100%';
+
+  const contentContainer = document.createElement('div');
+  contentContainer.style.width = '100%';
+  contentContainer.style.minWidth = '120px';
+  contentContainer.style.minHeight = '40px';
+
+  const resizeHandle = document.createElement('div');
+  resizeHandle.style.position = 'absolute';
+  resizeHandle.style.right = '2px';
+  resizeHandle.style.bottom = '2px';
+  resizeHandle.style.width = '11px';
+  resizeHandle.style.height = '11px';
+  resizeHandle.style.cursor = 'se-resize';
+  resizeHandle.style.borderRight = '2px solid #9ca3af';
+  resizeHandle.style.borderBottom = '2px solid #9ca3af';
+  resizeHandle.style.borderRadius = '1px';
+  resizeHandle.style.background = 'transparent';
+  resizeHandle.style.zIndex = '5';
+
+  let isResizing = false;
+  let manualResizeEnabled = false;
+  let startX = 0;
+  let startY = 0;
+  let startWidth = 0;
+  let startHeight = 0;
+
+  const onResizeMove = (event) => {
+    if (!isResizing) return;
+
+    const scaleState = paper.scale();
+    const scaleX = scaleState?.sx || 1;
+    const scaleY = scaleState?.sy || 1;
+    const dx = (event.clientX - startX) / scaleX;
+    const dy = (event.clientY - startY) / scaleY;
+    const nextWidth = Math.max(170, startWidth + dx);
+    const nextHeight = Math.max(70, startHeight + dy);
+    node.resize(nextWidth, nextHeight);
+  };
+
+  const stopResize = () => {
+    isResizing = false;
+    document.removeEventListener('mousemove', onResizeMove);
+    document.removeEventListener('mouseup', stopResize);
+  };
+
+  resizeHandle.addEventListener('mousedown', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    manualResizeEnabled = true;
+    isResizing = true;
+    startX = event.clientX;
+    startY = event.clientY;
+    const currentSize = node.size();
+    startWidth = currentSize.width;
+    startHeight = currentSize.height;
+    document.addEventListener('mousemove', onResizeMove);
+    document.addEventListener('mouseup', stopResize);
+  });
+
+  const root = createRoot(contentContainer);
   root.render(
     <CardContent
       mapId={mapId}
@@ -796,17 +868,21 @@ export function CreateElement(
       onNodeFontSizeChange={onNodeFontSizeChange}
     />
   );
+  nameContainer.appendChild(contentContainer);
+  nameContainer.appendChild(resizeHandle);
   foreignObject.appendChild(nameContainer);
 
   const resizeObserver = new ResizeObserver(() => {
+    if (manualResizeEnabled) return;
+
     // Используем внутренние размеры контента, а не boundingClientRect,
     // чтобы zoom/scale бумаги не влиял на итоговый размер узла.
-    const contentWidth = Math.max(nameContainer.scrollWidth, nameContainer.offsetWidth, 120);
-    const contentHeight = Math.max(nameContainer.scrollHeight, nameContainer.offsetHeight, 40);
+    const contentWidth = Math.max(contentContainer.scrollWidth, contentContainer.offsetWidth, 120);
+    const contentHeight = Math.max(contentContainer.scrollHeight, contentContainer.offsetHeight, 40);
     node.resize(contentWidth + 12, contentHeight + 24);
   });
 
-  resizeObserver.observe(nameContainer);
+  resizeObserver.observe(contentContainer);
 
   if (nodeId) {
     node.backId = nodeId;

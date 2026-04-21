@@ -41,11 +41,11 @@ export default function EditableCodeBlock({ initialCode = '', language = 'py', f
             style={{
                 backgroundColor: "#ffffff",
                 color: "#0f172a",
-                fontFamily:
-                    "IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
                 fontSize: `${fontSize}px`,
-                marginBottom: 20,
+                marginBottom: 12,
                 width: '100%',
+                maxWidth: '100%',
+                boxSizing: 'border-box',
                 resize: 'none',
                 overflow: 'hidden',
                 minHeight: '100px',

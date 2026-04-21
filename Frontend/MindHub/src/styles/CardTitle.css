@@ -1,23 +1,30 @@
 .card_title {
     margin: 10px;
     color: #12006b;
-    text-align: center;
-    display: inline-flex;
+    text-align: left;
+    display: flex;
     justify-content: flex-start;
-    align-items: center; 
+    align-items: flex-start;
     gap: 8px;
-    width: auto;
+    width: 100%;
     min-width: 0;
-    max-width: none;
+    box-sizing: border-box;
 }
 
 .card_name{
-    display: inline-block;
-    flex: 0 0 auto;
-    white-space: pre;
-    overflow-wrap: normal;
-    word-break: keep-all;
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     hyphens: none;
+}
+
+.card_name span {
+    display: block;
+    width: 100%;
+    line-height: 1.35;
 }
 
 .burger_menu {
@@ -39,15 +46,17 @@
 
 .button_content {
     display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    margin-left: 2px;
+    justify-content: center;
+    align-items: flex-start;
+    margin-left: auto;
     min-width: 24px;
     flex-shrink: 0;
 }
 
 .node-editor-wrapper {
     margin: 0 8px 10px;
+    width: calc(100% - 16px);
+    box-sizing: border-box;
 }
 
 .floating-node-toolbar {

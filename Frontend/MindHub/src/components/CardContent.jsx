@@ -35,6 +35,7 @@ export default function CardContent({
     const initializedNodeIdRef = useRef(null);
     const titleRef = useRef(null);
     const toolbarRoot = useMemo(() => document.body, []);
+    const toolbarRef = useRef(null);
 
     useEffect(() => {
         if (initializedNodeIdRef.current === initCardId) return;
@@ -157,11 +158,16 @@ export default function CardContent({
 
         const updateToolbarPosition = () => {
             if (!titleRef.current) return;
+            const toolbarHeight = toolbarRef.current?.offsetHeight || 52;
+            const toolbarWidth = toolbarRef.current?.offsetWidth || 360;
             const rect = titleRef.current.getBoundingClientRect();
             if (rect.width === 0 && rect.height === 0) return;
+            const top = Math.max(8, rect.top - toolbarHeight - 12);
+            const unclampedLeft = rect.left;
+            const maxLeft = Math.max(8, window.innerWidth - toolbarWidth - 8);
             setToolbarPosition({
-                top: Math.max(8, rect.top - 52),
-                left: rect.left
+                top,
+                left: Math.min(Math.max(8, unclampedLeft), maxLeft)
             });
         };
 
@@ -176,6 +182,20 @@ export default function CardContent({
             window.removeEventListener('scroll', updateToolbarPosition, true);
         };
     }, [isCodeBlockVisible]);
+
+    useEffect(() => {
+        const handleActiveNodeChanged = (event) => {
+            const activeNodeId = event?.detail?.nodeId;
+            if (activeNodeId == null || String(activeNodeId) !== String(cardId)) {
+                setIsCodeBlockVisible(false);
+            }
+        };
+
+        window.addEventListener('mindhub:active-node-changed', handleActiveNodeChanged);
+        return () => {
+            window.removeEventListener('mindhub:active-node-changed', handleActiveNodeChanged);
+        };
+    }, [cardId]);
 
     return (
         <>
@@ -202,6 +222,7 @@ export default function CardContent({
             )}
             {isCodeBlockVisible && toolbarPosition && createPortal(
                 <div
+                    ref={toolbarRef}
                     className="floating-node-toolbar"
                     style={{ top: `${toolbarPosition.top}px`, left: `${toolbarPosition.left}px` }}
                 >
