@@ -14,18 +14,11 @@ export default function EditableCodeBlock({ initialCode = '', language = 'py', f
         if (onCodeChange) {
             onCodeChange(evn.target.value);
         }
-        autoResize(evn.target);
-    };
-
-    const autoResize = (textarea) => {
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
     };
 
     useEffect(() => {
         if (textRef.current) {
             textRef.current.focus();
-            autoResize(textRef.current);
         }
     }, []);
 
@@ -45,10 +38,10 @@ export default function EditableCodeBlock({ initialCode = '', language = 'py', f
                 marginBottom: 12,
                 width: '100%',
                 maxWidth: '100%',
+                height: '100%',
+                minHeight: '100%',
                 boxSizing: 'border-box',
-                resize: 'none',
-                overflow: 'hidden',
-                minHeight: '100px',
+                overflow: 'auto',
                 fontFamily: 'inherit',
                 fontWeight: 500
             }}

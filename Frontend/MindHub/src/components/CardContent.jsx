@@ -20,7 +20,8 @@ export default function CardContent({
     initialStyleId = null,
     onNodeColorChange = null,
     onNodeStyleChange = null,
-    onNodeFontSizeChange = null
+    onNodeFontSizeChange = null,
+    onCodeBlockVisibilityChange = null
 }) {
     const [isCodeBlockVisible, setIsCodeBlockVisible] = useState(false);
     const [name, setName] = React.useState(initialName);
@@ -98,7 +99,11 @@ export default function CardContent({
     }, []);
 
     const toggleCodeBlock = async () => {
-        setIsCodeBlockVisible(!isCodeBlockVisible);
+        const nextVisible = !isCodeBlockVisible;
+        setIsCodeBlockVisible(nextVisible);
+        if (onCodeBlockVisibilityChange) {
+            onCodeBlockVisibilityChange(cardId, nextVisible);
+        }
     };
 
     async function onCodeChange(code) {
@@ -183,22 +188,8 @@ export default function CardContent({
         };
     }, [isCodeBlockVisible]);
 
-    useEffect(() => {
-        const handleActiveNodeChanged = (event) => {
-            const activeNodeId = event?.detail?.nodeId;
-            if (activeNodeId == null || String(activeNodeId) !== String(cardId)) {
-                setIsCodeBlockVisible(false);
-            }
-        };
-
-        window.addEventListener('mindhub:active-node-changed', handleActiveNodeChanged);
-        return () => {
-            window.removeEventListener('mindhub:active-node-changed', handleActiveNodeChanged);
-        };
-    }, [cardId]);
-
     return (
-        <>
+        <div className="card-content-root">
             <div className='card_title'>
                 <div className='card_name'>
                     <span ref={titleRef} style={{ fontSize: `${fontSize}px` }}>{name}</span>
@@ -275,6 +266,6 @@ export default function CardContent({
                 </div>,
                 toolbarRoot
             )}
-        </>
+        </div>
     );
 }

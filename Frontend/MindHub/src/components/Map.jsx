@@ -226,6 +226,19 @@ function Map() {
     );
   };
 
+  const handleCodeBlockVisibilityChange = (nodeId, isVisible) => {
+    if (isVisible) return;
+    const nodeModel = nodesMap.current[nodeId];
+    if (!nodeModel || !paperInstance.current) return;
+
+    const nodeView = paperInstance.current.findViewByModel(nodeModel);
+    const titleElement = nodeView?.el?.querySelector('.card_title');
+    const titleHeight = titleElement ? titleElement.scrollHeight : 36;
+    const currentSize = nodeModel.size();
+    const nextHeight = Math.max(50, titleHeight + 30);
+    nodeModel.resize(currentSize.width, nextHeight);
+  };
+
   useEffect(() => {
     const GetNodes = async (mapId) => {
       const nodesData = await GetNodesByMapId(mapId);
@@ -405,7 +418,8 @@ function Map() {
             node.data?.style?.id ?? null,
             updateNodeColor,
             updateNodeStyleInState,
-            updateNodeSizeByFont
+            updateNodeSizeByFont,
+            handleCodeBlockVisibilityChange
           );
 
           const newLink = new shapes.standard.Link();
@@ -437,7 +451,8 @@ function Map() {
         node.style?.id ?? null,
         updateNodeColor,
         updateNodeStyleInState,
-        updateNodeSizeByFont
+        updateNodeSizeByFont,
+        handleCodeBlockVisibilityChange
       );
       nodeMap[node.id] = newNode;
     });
@@ -772,7 +787,8 @@ export function CreateElement(
   initialStyleId = null,
   onNodeColorChange = null,
   onNodeStyleChange = null,
-  onNodeFontSizeChange = null
+  onNodeFontSizeChange = null,
+  onCodeBlockVisibilityChange = null
 ) {
   const node = new Card();
   node.position(position.x, position.y);
@@ -793,11 +809,17 @@ export function CreateElement(
   nameContainer.style.position = 'relative';
   nameContainer.style.width = '100%';
   nameContainer.style.height = '100%';
+  nameContainer.style.boxSizing = 'border-box';
+  nameContainer.style.paddingRight = '14px';
+  nameContainer.style.paddingBottom = '14px';
 
   const contentContainer = document.createElement('div');
   contentContainer.style.width = '100%';
+  contentContainer.style.boxSizing = 'border-box';
   contentContainer.style.minWidth = '120px';
   contentContainer.style.minHeight = '40px';
+  contentContainer.style.maxHeight = 'none';
+  contentContainer.style.overflow = 'visible';
 
   const resizeHandle = document.createElement('div');
   resizeHandle.style.position = 'absolute';
@@ -814,6 +836,7 @@ export function CreateElement(
 
   let isResizing = false;
   let manualResizeEnabled = false;
+  let autoResizePaused = false;
   let startX = 0;
   let startY = 0;
   let startWidth = 0;
@@ -866,6 +889,12 @@ export function CreateElement(
       onNodeColorChange={onNodeColorChange}
       onNodeStyleChange={onNodeStyleChange}
       onNodeFontSizeChange={onNodeFontSizeChange}
+      onCodeBlockVisibilityChange={(currentNodeId, isVisible) => {
+        autoResizePaused = isVisible;
+        if (onCodeBlockVisibilityChange) {
+          onCodeBlockVisibilityChange(currentNodeId, isVisible);
+        }
+      }}
     />
   );
   nameContainer.appendChild(contentContainer);
@@ -873,13 +902,25 @@ export function CreateElement(
   foreignObject.appendChild(nameContainer);
 
   const resizeObserver = new ResizeObserver(() => {
-    if (manualResizeEnabled) return;
+    if (manualResizeEnabled || autoResizePaused) return;
 
     // Используем внутренние размеры контента, а не boundingClientRect,
     // чтобы zoom/scale бумаги не влиял на итоговый размер узла.
     const contentWidth = Math.max(contentContainer.scrollWidth, contentContainer.offsetWidth, 120);
-    const contentHeight = Math.max(contentContainer.scrollHeight, contentContainer.offsetHeight, 40);
-    node.resize(contentWidth + 12, contentHeight + 24);
+    const contentHeight = Math.max(contentContainer.scrollHeight, 40);
+    const currentSize = node.size();
+    const widthWithPadding = contentWidth + 26;
+    const heightWithPadding = contentHeight + 38;
+    const nextWidth = Math.max(170, widthWithPadding);
+    const nextHeight = Math.max(70, heightWithPadding);
+
+    // Предотвращаем саморасширяющийся цикл: обновляем размер только при реальном изменении.
+    if (
+      Math.abs(currentSize.width - nextWidth) > 1 ||
+      Math.abs(currentSize.height - nextHeight) > 1
+    ) {
+      node.resize(nextWidth, nextHeight);
+    }
   });
 
   resizeObserver.observe(contentContainer);
