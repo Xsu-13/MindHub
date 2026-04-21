@@ -83,9 +83,17 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance, 
     const positionHandler = (nodeId, x, y) => {
       updateNodePosition(nodeId, x, y);
     };
+    const sizeHandler = (nodeId, width, height) => {
+      if (!nodeMapRef.current) return;
+      const node = nodeMapRef.current[nodeId];
+      if (node) {
+        node.resize(Number(width), Number(height));
+      }
+    };
 
     connection.on('ReceiveLockStatus', handler);
     connection.on('ReceiveNodePosition', positionHandler);
+    connection.on('ReceiveNodeSizeUpdate', sizeHandler);
 
     connection.on("ReceiveNodeNameUpdate", (nodeId, newNodeName) => {
       const node = nodeMapRef.current[nodeId];
@@ -129,6 +137,7 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance, 
     return () => {
       connection.off('ReceiveLockStatus', handler);
       connection.off('ReceiveNodePosition', positionHandler);
+      connection.off('ReceiveNodeSizeUpdate', sizeHandler);
       connection.off("ReceiveNodeNameUpdate");
       connection.off("ReceiveAddNode");
       connection.off("ReceiveRemoveNode");
@@ -179,6 +188,33 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance, 
       return false;
     }
   }, [connection, lockedNodes, currentUser]);
+
+  const updateNodeSize = useCallback(async (nodeId, width, height) => {
+    if (!connection) return;
+    try {
+      await connection.invoke('UpdateNodeSize', mapId.toString(), nodeId.toString(), width, height);
+    } catch (error) {
+      console.error('Update node size failed:', error);
+    }
+  }, [connection, mapId]);
+
+  const updateNodeCodeBlockState = useCallback(async (nodeId, isOpen) => {
+    if (!connection) return;
+    try {
+      await connection.invoke('UpdateNodeCodeBlockState', mapId.toString(), nodeId.toString(), isOpen);
+    } catch (error) {
+      console.error('Update node code block state failed:', error);
+    }
+  }, [connection, mapId]);
+
+  const updateNodeStyleRealtime = useCallback(async (nodeId, stylePatch) => {
+    if (!connection) return;
+    try {
+      await connection.invoke('UpdateNodeStyle', mapId.toString(), nodeId.toString(), JSON.stringify(stylePatch));
+    } catch (error) {
+      console.error('Update node style realtime failed:', error);
+    }
+  }, [connection, mapId]);
 
   // Запрос блокировки узла
   const requestLock = useCallback(async (nodeId) => {
@@ -237,6 +273,9 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance, 
     updateNodeDescription,
     canEditNode,
     moveNode,
+    updateNodeSize,
+    updateNodeCodeBlockState,
+    updateNodeStyleRealtime,
     removeNode,
     addNode,
     getLockedNodes,

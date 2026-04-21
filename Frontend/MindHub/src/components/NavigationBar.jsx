@@ -42,6 +42,9 @@ const NavigationBar = ({ nodes = [], onNodesUpdate, onLoading, onError }) => {
         console.log('Ответ от AI:', response);
         
         if (response && response.data && response.data.success) {
+          if (response.data.recoveryMessage) {
+            setChatMessages((prev) => [...prev, { role: 'assistant', text: `⚙️ ${response.data.recoveryMessage}` }]);
+          }
           if (response.data.requiresClarification) {
             const clarificationText = response.data.clarificationQuestion || 'УТОЧНЕНИЕ: Уточните запрос.';
             setChatMessages((prev) => [...prev, { role: 'assistant', text: clarificationText, isClarification: true }]);

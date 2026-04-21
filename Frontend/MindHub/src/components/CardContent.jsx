@@ -18,12 +18,14 @@ export default function CardContent({
     initialFontSize = 14,
     initialBackgroundColor = '#FFFFFF',
     initialStyleId = null,
+    initialIsCodeBlockOpen = false,
     onNodeColorChange = null,
     onNodeStyleChange = null,
     onNodeFontSizeChange = null,
-    onCodeBlockVisibilityChange = null
+    onCodeBlockVisibilityChange = null,
+    onNodeStyleRealtime = null
 }) {
-    const [isCodeBlockVisible, setIsCodeBlockVisible] = useState(false);
+    const [isCodeBlockVisible, setIsCodeBlockVisible] = useState(initialIsCodeBlockOpen);
     const [name, setName] = React.useState(initialName);
     const [code, setCode] = React.useState(initialCode);
     const [language, setLanguage] = React.useState(initialLanguage);
@@ -47,8 +49,9 @@ export default function CardContent({
         setFontSize(initialFontSize || 14);
         setSelectedColor(initialBackgroundColor || '#FFFFFF');
         setStyleId(initialStyleId);
+        setIsCodeBlockVisible(!!initialIsCodeBlockOpen);
         initializedNodeIdRef.current = initCardId;
-    }, [initialName, initialCode, initCardId, initialLanguage, initialFontSize, initialBackgroundColor, initialStyleId]);
+    }, [initialName, initialCode, initCardId, initialLanguage, initialFontSize, initialBackgroundColor, initialStyleId, initialIsCodeBlockOpen]);
 
     const patchStyleSafe = async (patch) => {
         let resolvedStyleId = styleId;
@@ -91,9 +94,42 @@ export default function CardContent({
             if(nodeId== cardId)
                 setCode(code);
         });
+        newConnection.on("ReceiveNodeCodeBlockStateUpdate", (nodeId, isOpen) => {
+            if (String(nodeId) === String(cardId)) {
+                setIsCodeBlockVisible(!!isOpen);
+            }
+        });
+        newConnection.on("ReceiveNodeStyleUpdate", (nodeId, stylePatchJson) => {
+            if (String(nodeId) !== String(cardId)) return;
+            try {
+                const patch = JSON.parse(stylePatchJson || "{}");
+                if (patch.fontFamily) setLanguage(patch.fontFamily);
+                if (patch.fontSize) {
+                    const nextFontSize = Number(patch.fontSize);
+                    const prevFontSize = fontSize;
+                    setFontSize(nextFontSize);
+                    if (onNodeFontSizeChange) {
+                        onNodeFontSizeChange(cardId, nextFontSize, prevFontSize);
+                    }
+                }
+                if (patch.backgroundColor) {
+                    setSelectedColor(patch.backgroundColor);
+                    if (onNodeColorChange) {
+                        onNodeColorChange(cardId, patch.backgroundColor);
+                    }
+                }
+                if (onNodeStyleChange) {
+                    onNodeStyleChange(cardId, patch);
+                }
+            } catch (e) {
+                console.error("Не удалось применить style update:", e);
+            }
+        });
 
         return () => {
             newConnection.off("ReceiveNodeDescriptionUpdate");
+            newConnection.off("ReceiveNodeCodeBlockStateUpdate");
+            newConnection.off("ReceiveNodeStyleUpdate");
             newConnection.stop();
         };
     }, []);
@@ -126,6 +162,9 @@ export default function CardContent({
         const newLanguage = event.target.value;
         setLanguage(newLanguage);
         await patchStyleSafe({ fontFamily: newLanguage });
+        if (onNodeStyleRealtime) {
+            onNodeStyleRealtime(cardId, { fontFamily: newLanguage });
+        }
         if (onNodeStyleChange) {
             onNodeStyleChange(cardId, { fontFamily: newLanguage });
         }
@@ -136,6 +175,9 @@ export default function CardContent({
         const previousFontSize = fontSize;
         setFontSize(newFontSize);
         await patchStyleSafe({ fontSize: newFontSize });
+        if (onNodeStyleRealtime) {
+            onNodeStyleRealtime(cardId, { fontSize: newFontSize });
+        }
         if (onNodeStyleChange) {
             onNodeStyleChange(cardId, { fontSize: newFontSize });
         }
@@ -150,6 +192,9 @@ export default function CardContent({
             onNodeColorChange(cardId, color);
         }
         await patchStyleSafe({ backgroundColor: color });
+        if (onNodeStyleRealtime) {
+            onNodeStyleRealtime(cardId, { backgroundColor: color });
+        }
         if (onNodeStyleChange) {
             onNodeStyleChange(cardId, { backgroundColor: color });
         }

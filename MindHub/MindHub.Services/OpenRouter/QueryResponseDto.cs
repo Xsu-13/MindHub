@@ -11,5 +11,6 @@ namespace MindHub.Services.OpenRouter
         public string? Model { get; set; }
         public bool RequiresClarification { get; set; }
         public string? ClarificationQuestion { get; set; }
+        public string? RecoveryMessage { get; set; }
     }
 }

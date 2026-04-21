@@ -9,3 +9,4 @@ dotnet ef database update --context {Context} --project .\MindHub.DAL.csproj --s
 ```
 
 dotnet ef database update --context MindHubContext --project .\MindHub.DAL.csproj --startup-project .\MindHub.DAL.csproj
+dotnet ef migrations add AddNodeSizeAndCodeBlockState --context MindHubContext --project .\MindHub.DAL.csproj --startup-project .\MindHub.DAL.csproj

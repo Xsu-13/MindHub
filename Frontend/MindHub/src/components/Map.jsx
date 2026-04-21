@@ -74,6 +74,9 @@ function Map() {
     updateNodeName,
     canEditNode,
     moveNode,
+    updateNodeSize,
+    updateNodeCodeBlockState,
+    updateNodeStyleRealtime,
     removeNode,
     addNode,
   } = useMindMapLock(nodesMap, mapId, paperInstance, graphInstance, () => nodesList.current);
@@ -105,13 +108,19 @@ function Map() {
       if (existingNode) {
         return {
           ...incomingNode,
-          style: incomingNode.style ?? existingNode.style ?? null
+          style: incomingNode.style ?? existingNode.style ?? null,
+          width: incomingNode.width ?? existingNode.width ?? 180,
+          height: incomingNode.height ?? existingNode.height ?? 70,
+          isCodeBlockOpen: incomingNode.isCodeBlockOpen ?? existingNode.isCodeBlockOpen ?? false
         };
       }
 
       return {
         ...incomingNode,
-        style: incomingNode.style ?? defaultStyle
+        style: incomingNode.style ?? defaultStyle,
+        width: incomingNode.width ?? 180,
+        height: incomingNode.height ?? 70,
+        isCodeBlockOpen: incomingNode.isCodeBlockOpen ?? false
       };
     });
 
@@ -132,7 +141,10 @@ function Map() {
           // Обновляем существующий узел
           await PatchNode(newNode.id, {
             title: newNode.title,
-            content: newNode.content
+            content: newNode.content,
+            width: newNode.width ?? existingNode.width ?? 180,
+            height: newNode.height ?? existingNode.height ?? 70,
+            isCodeBlockOpen: newNode.isCodeBlockOpen ?? existingNode.isCodeBlockOpen ?? false
           });
           updatedNodes.push({
             ...existingNode,
@@ -155,6 +167,9 @@ function Map() {
             content: newNode.content,
             x: newNode.x,
             y: newNode.y,
+            width: newNode.width ?? 180,
+            height: newNode.height ?? 70,
+            isCodeBlockOpen: newNode.isCodeBlockOpen ?? false,
             style: newNode.style ?? defaultStyle
           });
           updatedNodes.push(createdNode.data);
@@ -234,6 +249,10 @@ function Map() {
     const currentSize = nodeModel.size();
 
     if (isVisible) {
+      PatchNode(nodeId, { isCodeBlockOpen: true }).catch((error) => {
+        console.error('Ошибка сохранения состояния code block:', error);
+      });
+      updateNodeCodeBlockState(nodeId, true);
       requestAnimationFrame(() => {
         const refreshedView = paperInstance.current?.findViewByModel(nodeModel);
         const rootContent = refreshedView?.el?.querySelector('.card-content-root');
@@ -251,6 +270,10 @@ function Map() {
     const titleHeight = titleElement ? titleElement.scrollHeight : 36;
     const nextHeight = Math.max(50, titleHeight + 30);
     nodeModel.resize(currentSize.width, nextHeight);
+    PatchNode(nodeId, { isCodeBlockOpen: false }).catch((error) => {
+      console.error('Ошибка сохранения состояния code block:', error);
+    });
+    updateNodeCodeBlockState(nodeId, false);
   };
 
   useEffect(() => {
@@ -403,6 +426,9 @@ function Map() {
             title: "New Node",
             x: newX,
             y: newY,
+            width: 180,
+            height: 70,
+            isCodeBlockOpen: false,
             content: "",
             style: {
               backgroundColor: "#FFFFFF",
@@ -430,10 +456,14 @@ function Map() {
             14,
             "#FFFFFF",
             node.data?.style?.id ?? null,
+            node.data?.width ?? 180,
+            node.data?.height ?? 70,
+            node.data?.isCodeBlockOpen ?? false,
             updateNodeColor,
             updateNodeStyleInState,
             updateNodeSizeByFont,
-            handleCodeBlockVisibilityChange
+            handleCodeBlockVisibilityChange,
+            updateNodeStyleRealtime
           );
 
           const newLink = new shapes.standard.Link();
@@ -463,10 +493,14 @@ function Map() {
         node.style?.fontSize || 14,
         node.style?.backgroundColor || "#FFFFFF",
         node.style?.id ?? null,
+        node.width ?? 180,
+        node.height ?? 70,
+        node.isCodeBlockOpen ?? false,
         updateNodeColor,
         updateNodeStyleInState,
         updateNodeSizeByFont,
-        handleCodeBlockVisibilityChange
+        handleCodeBlockVisibilityChange,
+        updateNodeStyleRealtime
       );
       nodeMap[node.id] = newNode;
     });
@@ -492,9 +526,12 @@ function Map() {
       try {
         await PatchNode(element.backId, {
           x: position.x,
-          y: position.y
+          y: position.y,
+          width: element.size().width,
+          height: element.size().height
         });
         await moveNode(mapId, element.backId, position.x, position.y);
+        await updateNodeSize(element.backId, element.size().width, element.size().height);
       } catch (error) {
         console.error('Ошибка сохранения позиции:', error);
       }
@@ -799,14 +836,18 @@ export function CreateElement(
   initialFontSize = 14,
   initialBackgroundColor = '#FFFFFF',
   initialStyleId = null,
+  initialWidth = 180,
+  initialHeight = 70,
+  initialIsCodeBlockOpen = false,
   onNodeColorChange = null,
   onNodeStyleChange = null,
   onNodeFontSizeChange = null,
-  onCodeBlockVisibilityChange = null
+  onCodeBlockVisibilityChange = null,
+  onNodeStyleRealtime = null
 ) {
   const node = new Card();
   node.position(position.x, position.y);
-  node.resize(180, 50);
+  node.resize(initialWidth || 180, initialHeight || 70);
   node.addTo(graph);
 
   node.attr('body', {
@@ -900,9 +941,11 @@ export function CreateElement(
       initialFontSize={initialFontSize}
       initialBackgroundColor={initialBackgroundColor}
       initialStyleId={initialStyleId}
+      initialIsCodeBlockOpen={initialIsCodeBlockOpen}
       onNodeColorChange={onNodeColorChange}
       onNodeStyleChange={onNodeStyleChange}
       onNodeFontSizeChange={onNodeFontSizeChange}
+      onNodeStyleRealtime={onNodeStyleRealtime}
       onCodeBlockVisibilityChange={(currentNodeId, isVisible) => {
         autoResizePaused = isVisible;
         if (onCodeBlockVisibilityChange) {

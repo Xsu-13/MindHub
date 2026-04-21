@@ -118,84 +118,41 @@ namespace MindHub.Services.OpenRouter
 
                 try
                 {
-                    var cleanedResponse = assistantMessage.Replace("```json", "").Replace("```", "").Trim();
-                    var nodes = new List<NodeDto>();
-
-                    var token = JToken.Parse(cleanedResponse);
-
-                    var responseType = token["type"]?.Value<string>()?.Trim().ToLowerInvariant();
-                    var clarificationQuestion = token["clarificationQuestion"]?.Value<string>()?.Trim();
-                    if (responseType == "clarification")
-                    {
-                        return new QueryResponseDto
-                        {
-                            Success = true,
-                            Response = new List<NodeDto>(),
-                            Model = model,
-                            RequiresClarification = true,
-                            ClarificationQuestion = string.IsNullOrWhiteSpace(clarificationQuestion)
-                                ? "УТОЧНЕНИЕ: Уточните, пожалуйста, задачу."
-                                : clarificationQuestion
-                        };
-                    }
-
-                    var nodesArray = token.Type == JTokenType.Array
-                        ? (JArray)token
-                        : token["nodes"] as JArray;
-
-                    if (nodesArray == null)
-                    {
-                        throw new Exception("Не удалось найти массив узлов в ответе AI");
-                    }
-
-                    foreach (var nodeJson in nodesArray)
-                    {
-                        var node = new NodeDto
-                        {
-                            Id = nodeJson["Id"]?.Value<int?>() ?? nodeJson["id"]?.Value<int?>() ?? 0,
-                            MapId = nodeJson["MapId"]?.Value<int?>() ?? nodeJson["mapId"]?.Value<int?>() ?? 0,
-                            ParentNodeId = nodeJson["ParentNodeId"]?.Value<int?>() ?? nodeJson["parentNodeId"]?.Value<int?>(),
-                            Title = nodeJson["Title"]?.Value<string>() ?? nodeJson["title"]?.Value<string>() ?? "",
-                            Content = nodeJson["Content"]?.Value<string>() ?? nodeJson["content"]?.Value<string>() ?? "",
-                            X = nodeJson["X"]?.Value<float?>() ?? nodeJson["x"]?.Value<float?>() ?? 0,
-                            Y = nodeJson["Y"]?.Value<float?>() ?? nodeJson["y"]?.Value<float?>() ?? 0,
-                            Style = null
-                        };
-
-                        if (string.IsNullOrWhiteSpace(node.Title))
-                        {
-                            node.Title = "Новый узел";
-                        }
-
-                        if (string.IsNullOrWhiteSpace(node.Content))
-                        {
-                            node.Content = "// Добавьте код или описание алгоритма";
-                        }
-                        nodes.Add(node);
-                    }
-
-                    return new QueryResponseDto
-                    {
-                        Success = true,
-                        Response = nodes,
-                        Model = model,
-                        RequiresClarification = false,
-                        ClarificationQuestion = null
-                    };
+                    return ParseAssistantResponse(assistantMessage, model, null);
                 }
                 catch (JsonException ex)
                 {
-                    // Если не удалось распарсить JSON, возвращаем ошибку
-                    _logger.LogError(ex, "Ошибка при парсинге JSON ответа от AI: {Response}", assistantMessage);
-                    return new QueryResponseDto
+                    _logger.LogWarning(ex, "JSON parsing failed, trying self-repair");
+                    try
                     {
-                        Success = false,
-                        ErrorMessage = $"Ответ AI не в правильном JSON формате. Ошибка: {ex.Message}. Ответ: {assistantMessage}"
-                    };
+                        var repairPrompt =
+                            "Исправь JSON-ответ. Верни строго валидный JSON формата из инструкции, без markdown и текста.\n" +
+                            $"Ошибка парсинга: {ex.Message}\n" +
+                            "Невалидный ответ:\n" + assistantMessage;
+
+                        var repairResponse = await _client.Chat
+                            .WithModel(model)
+                            .WithTemperature(0.1f)
+                            .WithMaxTokens(maxTokens)
+                            .AddUserMessage(repairPrompt)
+                            .SendAsync();
+
+                        var repairedMessage = repairResponse?.Choices?.FirstOrDefault()?.Message?.Content ?? "";
+                        var parsed = ParseAssistantResponse(repairedMessage, model, "AI вернул невалидный JSON, запустили автоисправление ответа.");
+                        return parsed;
+                    }
+                    catch (Exception retryEx)
+                    {
+                        _logger.LogError(retryEx, "Repair attempt failed");
+                        return new QueryResponseDto
+                        {
+                            Success = false,
+                            ErrorMessage = $"Ответ AI не в правильном JSON формате. Ошибка: {ex.Message}. Ответ: {assistantMessage}"
+                        };
+                    }
                 }
                 catch (Exception ex)
                 {
-                    // Обрабатываем другие возможные ошибки при парсинге
                     _logger.LogError(ex, "Неожиданная ошибка при обработке ответа AI: {Response}", assistantMessage);
                     return new QueryResponseDto
                     {
@@ -213,6 +170,76 @@ namespace MindHub.Services.OpenRouter
                     ErrorMessage = $"Ошибка: {ex.Message}"
                 };
             }
+        }
+
+        private QueryResponseDto ParseAssistantResponse(string assistantMessage, string model, string? recoveryMessage)
+        {
+            var cleanedResponse = assistantMessage.Replace("```json", "").Replace("```", "").Trim();
+            var nodes = new List<NodeDto>();
+
+            var token = JToken.Parse(cleanedResponse);
+
+            var responseType = token["type"]?.Value<string>()?.Trim().ToLowerInvariant();
+            var clarificationQuestion = token["clarificationQuestion"]?.Value<string>()?.Trim();
+            if (responseType == "clarification")
+            {
+                return new QueryResponseDto
+                {
+                    Success = true,
+                    Response = new List<NodeDto>(),
+                    Model = model,
+                    RequiresClarification = true,
+                    ClarificationQuestion = string.IsNullOrWhiteSpace(clarificationQuestion)
+                        ? "УТОЧНЕНИЕ: Уточните, пожалуйста, задачу."
+                        : clarificationQuestion,
+                    RecoveryMessage = recoveryMessage
+                };
+            }
+
+            var nodesArray = token.Type == JTokenType.Array
+                ? (JArray)token
+                : token["nodes"] as JArray;
+
+            if (nodesArray == null)
+            {
+                throw new Exception("Не удалось найти массив узлов в ответе AI");
+            }
+
+            foreach (var nodeJson in nodesArray)
+            {
+                var node = new NodeDto
+                {
+                    Id = nodeJson["Id"]?.Value<int>() ?? nodeJson["id"]?.Value<int>() ?? 0,
+                    MapId = nodeJson["MapId"]?.Value<int>() ?? nodeJson["mapId"]?.Value<int>() ?? 0,
+                    ParentNodeId = nodeJson["ParentNodeId"]?.Value<int>() ?? nodeJson["parentNodeId"]?.Value<int>(),
+                    Title = nodeJson["Title"]?.Value<string>() ?? nodeJson["title"]?.Value<string>() ?? "",
+                    Content = nodeJson["Content"]?.Value<string>() ?? nodeJson["content"]?.Value<string>() ?? "",
+                    X = nodeJson["X"]?.Value<float>() ?? nodeJson["x"]?.Value<float>() ?? 0,
+                    Y = nodeJson["Y"]?.Value<float>() ?? nodeJson["y"]?.Value<float>() ?? 0,
+                    Style = null
+                };
+
+                if (string.IsNullOrWhiteSpace(node.Title))
+                {
+                    node.Title = "Новый узел";
+                }
+
+                if (string.IsNullOrWhiteSpace(node.Content))
+                {
+                    node.Content = "// Добавьте код или описание алгоритма";
+                }
+                nodes.Add(node);
+            }
+
+            return new QueryResponseDto
+            {
+                Success = true,
+                Response = nodes,
+                Model = model,
+                RequiresClarification = false,
+                ClarificationQuestion = null,
+                RecoveryMessage = recoveryMessage
+            };
         }
     }
 }
