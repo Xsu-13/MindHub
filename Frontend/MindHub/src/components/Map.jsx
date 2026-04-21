@@ -227,14 +227,28 @@ function Map() {
   };
 
   const handleCodeBlockVisibilityChange = (nodeId, isVisible) => {
-    if (isVisible) return;
     const nodeModel = nodesMap.current[nodeId];
     if (!nodeModel || !paperInstance.current) return;
 
     const nodeView = paperInstance.current.findViewByModel(nodeModel);
+    const currentSize = nodeModel.size();
+
+    if (isVisible) {
+      requestAnimationFrame(() => {
+        const refreshedView = paperInstance.current?.findViewByModel(nodeModel);
+        const rootContent = refreshedView?.el?.querySelector('.card-content-root');
+        if (!rootContent) return;
+
+        const requiredHeight = Math.max(70, rootContent.scrollHeight + 26);
+        if (requiredHeight > nodeModel.size().height) {
+          nodeModel.resize(nodeModel.size().width, requiredHeight);
+        }
+      });
+      return;
+    }
+
     const titleElement = nodeView?.el?.querySelector('.card_title');
     const titleHeight = titleElement ? titleElement.scrollHeight : 36;
-    const currentSize = nodeModel.size();
     const nextHeight = Math.max(50, titleHeight + 30);
     nodeModel.resize(currentSize.width, nextHeight);
   };
@@ -810,8 +824,8 @@ export function CreateElement(
   nameContainer.style.width = '100%';
   nameContainer.style.height = '100%';
   nameContainer.style.boxSizing = 'border-box';
-  nameContainer.style.paddingRight = '14px';
-  nameContainer.style.paddingBottom = '14px';
+  nameContainer.style.paddingRight = '18px';
+  nameContainer.style.paddingBottom = '18px';
 
   const contentContainer = document.createElement('div');
   contentContainer.style.width = '100%';
@@ -823,10 +837,10 @@ export function CreateElement(
 
   const resizeHandle = document.createElement('div');
   resizeHandle.style.position = 'absolute';
-  resizeHandle.style.right = '2px';
-  resizeHandle.style.bottom = '2px';
-  resizeHandle.style.width = '11px';
-  resizeHandle.style.height = '11px';
+  resizeHandle.style.right = '0px';
+  resizeHandle.style.bottom = '0px';
+  resizeHandle.style.width = '14px';
+  resizeHandle.style.height = '14px';
   resizeHandle.style.cursor = 'se-resize';
   resizeHandle.style.borderRight = '2px solid #9ca3af';
   resizeHandle.style.borderBottom = '2px solid #9ca3af';
@@ -906,12 +920,10 @@ export function CreateElement(
 
     // Используем внутренние размеры контента, а не boundingClientRect,
     // чтобы zoom/scale бумаги не влиял на итоговый размер узла.
-    const contentWidth = Math.max(contentContainer.scrollWidth, contentContainer.offsetWidth, 120);
     const contentHeight = Math.max(contentContainer.scrollHeight, 40);
     const currentSize = node.size();
-    const widthWithPadding = contentWidth + 26;
-    const heightWithPadding = contentHeight + 38;
-    const nextWidth = Math.max(170, widthWithPadding);
+    const heightWithPadding = contentHeight + 42;
+    const nextWidth = Math.max(170, currentSize.width);
     const nextHeight = Math.max(70, heightWithPadding);
 
     // Предотвращаем саморасширяющийся цикл: обновляем размер только при реальном изменении.
