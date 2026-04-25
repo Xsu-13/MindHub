@@ -9,6 +9,7 @@ import NodesPreviewModal from './NodesPreviewModal';
 import { CreateNode, PatchNode, DeleteNode, GetNodesByMapId } from '../services/urls.js';
 import MouseTracker from './MouseTracker.jsx';
 import { useMindMapLock } from './useMindMapLock.jsx';
+import {createDeleteButton, createAddButton} from '../utils/nodeTools.jsx'
 
 export const Card = dia.Element.define('example.ForeignObject', {
   attrs: {
@@ -408,173 +409,25 @@ function Map() {
     paperInstance.current = paper;
     let isPanning = false;
     let panStart = { x: 0, y: 0 };
-    const deleteButton = elementTools.Button.extend({
-      name: 'delete-button',
-      options: {
-        markup: [{
-          tagName: 'circle',
-          selector: 'button',
-          attributes: {
-            'r': 7,
-            'fill': '#FF0000',
-            'cursor': 'pointer'
-          }
-        }, {
-          tagName: 'text',
-          selector: 'icon',
-          attributes: {
-            'text-anchor': 'middle',
-            'y': '0.3em',
-            'fill': '#FFFFFF',
-            'font-size': 14,
-            'pointer-events': 'none'
-          },
-          textContent: 'x'
-        }],
-        x: '100%',
-        y: '0%',
-        offset: { x: 10, y: -10 },
-        action: async function (evt) {
-          const currentElement = this.model;
 
-          try {
-            const targetId = currentElement.backId;
-            const allNodes = nodesList.current || [];
-            const idsToDelete = new Set([targetId]);
-            const stack = [targetId];
-
-            while (stack.length > 0) {
-              const currentId = stack.pop();
-              allNodes
-                .filter((node) => node.parentNodeId === currentId)
-                .forEach((child) => {
-                  if (!idsToDelete.has(child.id)) {
-                    idsToDelete.add(child.id);
-                    stack.push(child.id);
-                  }
-                });
-            }
-
-            await DeleteNode(targetId);
-
-            for (const idToDelete of idsToDelete) {
-              await removeNode(idToDelete);
-              const nodeView = nodesMap.current[idToDelete];
-              if (nodeView) {
-                nodeView.remove();
-                delete nodesMap.current[idToDelete];
-              }
-            }
-
-            const filteredNodes = allNodes.filter((node) => !idsToDelete.has(node.id));
-            setNodes(filteredNodes);
-            nodesList.current = filteredNodes;
-          } catch (error) {
-            console.error('Ошибка удаления узла:', error);
-          }
-        }
-      }
-    });
-
-    elementTools.PlusButton = elementTools.Button.extend({
-      name: 'plus-button',
-      options: {
-        markup: [{
-          tagName: 'circle',
-          selector: 'button',
-          attributes: {
-            'r': 7,
-            'fill': '#FF0000',
-            'cursor': 'pointer'
-          }
-        }, {
-          tagName: 'text',
-          selector: 'icon',
-          attributes: {
-            'text-anchor': 'middle',
-            'y': '0.3em',
-            'fill': '#FFFFFF',
-            'font-size': 14,
-            'pointer-events': 'none'
-          },
-          textContent: '+'
-        }],
-        x: '100%',
-        y: '100%',
-        offset: {
-          x: 0,
-          y: 10
-        },
-        rotate: true,
-        action: async function (evt) {
-          const currentElement = this.model;
-          const position = currentElement.position();
-          const newX = position.x + 250;
-          const newY = position.y + 50;
-
-          var node = await CreateNode({
-            mapId: mapId,
-            parentNodeId: currentElement.backId,
-            title: "New Node",
-            x: newX,
-            y: newY,
-            width: 180,
-            height: 70,
-            isCodeBlockOpen: false,
-            content: "",
-            style: {
-              backgroundColor: "#FFFFFF",
-              textColor: "#353535",
-              borderColor: "#C94A46",
-              fontFamily: "py",
-              fontSize: 14
-            }
-          });
-
-          await addNode(node.data.id, newX, newY, currentElement.backId);
-
-          const newRect = CreateElement(
-            nodesMap,
-            mapId,
-            "New Node",
-            paper,
-            graph,
-            { x: newX, y: newY },
-            "#FFFFFF",
-            node.data.id,
-            "",
-            false,
-            "py",
-            14,
-            "#FFFFFF",
-            node.data?.style?.id ?? null,
-            node.data?.width ?? 180,
-            node.data?.height ?? 70,
-            node.data?.isCodeBlockOpen ?? false,
-            node.data?.isCollapsed ?? false,
-            updateNodeColor,
-            updateNodeStyleInState,
-            updateNodeSizeByFont,
-            handleCodeBlockVisibilityChange,
-            updateNodeStyleRealtime,
-            handleNodeCollapseChange
-          );
-
-          nodesList.current.push(node.data);
-
-
-          const newLink = new shapes.standard.Link();
-          newLink.set('z', -1);
-
-          newLink.source({ id: currentElement.id });
-          newLink.target({ id: newRect.id });
-
-          newLink.addTo(graph);
-
-          updateTreeVisibility();
-        }
-      }
-    });
+    const DeleteButton = createDeleteButton(removeNode, DeleteNode, nodesList, nodesMap, setNodes);
+    const AddButton = createAddButton(
+      CreateNode, 
+      CreateElement, 
+      addNode, 
+      nodesMap, 
+      mapId, 
+      graphInstance.current, 
+      () => updateTreeVisibility(),
+      paper,
+      nodesList,
+      updateNodeColor,
+      updateNodeStyleInState,
+      updateNodeSizeByFont,
+      handleCodeBlockVisibilityChange,
+      updateNodeStyleRealtime,
+      handleNodeCollapseChange
+    );
 
     const nodeMap = {};
     nodes.forEach((node) => {
@@ -662,14 +515,8 @@ function Map() {
     });
 
     let currentElementView = null;
-
-    var plusButton = new elementTools.PlusButton({
-      x: '100%',
-      y: '50%',
-      offset: { x: 10, y: 0 },
-      graph: graph
-    });
-    const deleteButtonTool = new deleteButton();
+    const deleteButtonTool = new DeleteButton();
+    const addButtonTool = new AddButton();
 
     paper.on('element:pointerdown', async function (elementView) {
       editingNodeRef.current = null;
@@ -691,14 +538,14 @@ function Map() {
       const links = graph.getLinks();
       elementView.addTools(new dia.ToolsView({
         tools: [
-          plusButton
+          addButtonTool
         ]
       }));
       if (links.some(link => link.getTargetElement() === elementView.model))
         elementView.addTools(new dia.ToolsView({
           tools: [
             deleteButtonTool,
-            plusButton
+            addButtonTool
           ]
         }));
 
