@@ -847,16 +847,29 @@ function Map() {
     const updateEditorPosition = () => {
       const paper = paperInstance.current;
       const paperRect = paperRef.current.getBoundingClientRect();
+
       const pos = editingNode.position();
+      const size = editingNode.size();
+
       const translation = paper.translate();
       const scaleState = paper.scale();
-      const scaleX = scaleState?.sx ?? zoomScaleRef.current ?? 1;
-      const scaleY = scaleState?.sy ?? zoomScaleRef.current ?? 1;
+
+      const scaleX = scaleState?.sx ?? 1;
+      const scaleY = scaleState?.sy ?? 1;
+
+      const screenLeft =
+        paperRect.left + translation.tx + pos.x * scaleX;
+
+      const screenTop =
+        paperRect.top + translation.ty + pos.y * scaleY;
+
+      const screenWidth = size.width * scaleX;
 
       setEditorPosition({
-        left: paperRect.left + translation.tx + pos.x * scaleX + 14,
-        top: paperRect.top + translation.ty + (pos.y + 14) * scaleY,
-        width: Math.max(160, 170 * scaleX)
+        left: screenLeft + 8,
+        top: screenTop + 8,
+        width: Math.max(80, screenWidth - 32),
+        height: 20
       });
     };
 
@@ -883,9 +896,26 @@ function Map() {
   const inputStyle = {
     position: 'absolute',
     zIndex: 1000,
-    padding: '5px',
-    backgroundColor: '#fff'
+    padding: '5px'
   };
+
+  const lightenColor = (hex, percent = 20) => {
+    const num = parseInt(hex.replace('#', ''), 16);
+
+    let r = (num >> 16) + percent;
+    let g = ((num >> 8) & 0x00FF) + percent;
+    let b = (num & 0x0000FF) + percent;
+
+    r = Math.min(255, r);
+    g = Math.min(255, g);
+    b = Math.min(255, b);
+
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+  
+  const nodeColor =
+  editingNode?.attr('body/fill') || '#ffffff';
+  const inputBg = lightenColor(nodeColor, 35);
   
 
   return (
@@ -916,7 +946,7 @@ function Map() {
       <div id="paper" ref={paperRef}></div>
       <MouseTracker></MouseTracker>
       
-      {/* Модальное окно предварительного просмотра */}
+
       <NodesPreviewModal
         isOpen={showPreviewModal}
         onClose={handleClosePreview}
@@ -931,7 +961,12 @@ function Map() {
           type="text"
           ref={titleInputRef}
           className='node_input'
-          style={{ ...inputStyle, width: editorPosition.width, top: editorPosition.top, left: editorPosition.left }}
+          style={{ 
+            ...inputStyle, 
+            width: editorPosition.width, 
+            top: editorPosition.top, 
+            left: editorPosition.left,
+            backgroundColor: inputBg }}
           value={inputValue}
           onChange={handleInputChange}
           onBlur={handleInputBlur}
@@ -1095,7 +1130,6 @@ export function CreateElement(
     const nextWidth = Math.max(170, currentSize.width);
     const nextHeight = Math.max(70, heightWithPadding);
 
-    // Предотвращаем саморасширяющийся цикл: обновляем размер только при реальном изменении.
     if (
       Math.abs(currentSize.width - nextWidth) > 1 ||
       Math.abs(currentSize.height - nextHeight) > 1
