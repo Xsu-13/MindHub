@@ -56,7 +56,6 @@ function Map() {
   const editingNodeRef = useRef(null);
   const nodesList = useRef([]);
   
-  // Состояния для AI помощника
   const [isAILoading, setIsAILoading] = useState(false);
   const [aiError, setAiError] = useState(null);
   const [previewNodes, setPreviewNodes] = useState([]);
@@ -81,7 +80,6 @@ function Map() {
     addNode,
   } = useMindMapLock(nodesMap, mapId, paperInstance, graphInstance, () => nodesList.current);
 
-  // Обработчики для AI помощника
   const handleAILoading = (loading) => {
     setIsAILoading(loading);
     if (!loading) {
@@ -196,17 +194,14 @@ function Map() {
         }
       }
 
-      // Обрабатываем удаленные (deleted) ноды - удаляем их
       if (previewNodes.deleted) {
         for (const deletedNode of previewNodes.deleted) {
           await DeleteNode(deletedNode.id);
         }
       }
       
-      // Обновляем состояние узлов
       let finalNodes = [...nodes];
       
-      // Добавляем обновленные и созданные ноды
       updatedNodes.forEach(updatedNode => {
         const index = finalNodes.findIndex(n => n.id === updatedNode.id);
         if (index >= 0) {
@@ -216,7 +211,6 @@ function Map() {
         }
       });
       
-      // Удаляем удаленные ноды изState
       if (previewNodes.deleted) {
         const deletedIds = new Set(previewNodes.deleted.map(n => n.id));
         finalNodes = finalNodes.filter(n => !deletedIds.has(n.id));
@@ -241,7 +235,6 @@ function Map() {
   };
 
   const handleNodeCollapseChange = async (nodeId, isCollapsed) => {
-    // Обновляем состояние в nodesList
     const updatedNodes = nodesList.current.map(node => 
       node.id === nodeId ? { ...node, isCollapsed } : node
     );
@@ -255,98 +248,7 @@ function Map() {
 
     updateTreeVisibility();
   };
-    // // Обновляем ноды в состоянии
-    // const allNodes = updatedNodes;
 
-    // // Функция для рекурсивного получения всех потомков
-    // const getAllDescendants = (parentId) => {
-    //   const descendants = [];
-    //   const stack = [parentId];
-
-    //   while (stack.length > 0) {
-    //     const currentId = stack.pop();
-    //     const childNodes = allNodes.filter(node => node.parentNodeId === currentId);
-
-    //     childNodes.forEach(child => {
-    //       descendants.push(child.id);
-    //       stack.push(child.id);
-    //     });
-    //   }
-
-    //   return descendants;
-    // };
-
-  //   // Функция для обновления видимости узла и его потомков
-  //   const updateNodeVisibility = (targetNodeId, shouldBeVisible) => {
-  //     const nodeElement = nodesMap.current[targetNodeId];
-  //     if (!nodeElement) return;
-
-  //     if (shouldBeVisible) {
-  //       // Показываем узел
-  //       nodeElement.attr('root/display', 'block');
-  //       nodeElement.attr('body/pointer-events', 'auto');
-  //       nodeElement.attr('body/stroke-dasharray', ''); // Убираем пунктир
-
-  //       // Показываем связанные ссылки
-  //       const links = graphInstance.current?.getLinks() || [];
-  //       links.forEach(link => {
-  //         const sourceId = link.getSourceElement()?.backId;
-  //         const targetId = link.getTargetElement()?.backId;
-
-  //         if (sourceId === targetNodeId || targetId === targetNodeId) {
-  //           const otherNodeId = sourceId === targetNodeId ? targetId : sourceId;
-  //           const otherNode = allNodes.find(n => n.id === otherNodeId);
-
-  //           // Показываем ссылку только если другой узел тоже видим
-  //           if (otherNode && nodesMap.current[otherNodeId]?.attr('body/visibility') === 'visible') {
-  //             link.attr('line/visibility', 'visible');
-  //           }
-  //         }
-  //       });
-  //     } else {
-  //       // Скрываем узел
-  //       nodeElement.attr('root/display', 'none');
-  //       nodeElement.attr('root/pointer-events', 'none');
-  //       nodeElement.attr('body/stroke-dasharray', '5,5'); // Добавляем пунктир для визуальной индикации
-
-  //       // Скрываем все связанные ссылки
-  //       const links = graphInstance.current?.getLinks() || [];
-  //       links.forEach(link => {
-  //         const sourceId = link.getSourceElement()?.backId;
-  //         const targetId = link.getTargetElement()?.backId;
-
-  //         if (sourceId === targetNodeId || targetId === targetNodeId) {
-  //           link.attr('line/visibility', 'hidden');
-  //         }
-  //       });
-  //     }
-  //   };
-
-  //   if (isCollapsed) {
-  //     // Скрываем всех потомков рекурсивно
-  //     const descendants = getAllDescendants(nodeId);
-  //     descendants.forEach(descendantId => {
-  //       updateNodeVisibility(descendantId, false);
-  //     });
-  //   } else {
-  //     // Показываем прямых детей, если они не свернуты сами по себе
-  //     const directChildren = allNodes.filter(node => node.parentNodeId === nodeId);
-  //     directChildren.forEach(child => {
-  //       // Показываем ребенка только если он не свернут
-  //       if (!child.isCollapsed) {
-  //         updateNodeVisibility(child.id, true);
-  //         // Рекурсивно показываем потомков этого ребенка, если они должны быть видимы
-  //         const childDescendants = getAllDescendants(child.id);
-  //         childDescendants.forEach(descendantId => {
-  //           const descendantNode = allNodes.find(n => n.id === descendantId);
-  //           if (descendantNode && !descendantNode.isCollapsed) {
-  //             updateNodeVisibility(descendantId, true);
-  //           }
-  //         });
-  //       }
-  //     });
-  //   }
-  // };
 
   const updateTreeVisibility = () => {
     const allNodes = nodesList.current || [];
@@ -719,7 +621,6 @@ function Map() {
       }
     });
 
-    // Применяем состояние коллапсирования для всех свернутых узлов
     nodes.forEach((node) => {
       if (node.isCollapsed) {
         const nodeElement = nodesMap[node.id];
@@ -996,7 +897,7 @@ function Map() {
         onError={handleAIError}
       />
       
-      {/* Показываем уведомления о состоянии AI */}
+      
       {isAILoading && (
         <div className="ai-loading-notification">
           <span className="loading-icon">⌛</span>
@@ -1188,8 +1089,6 @@ export function CreateElement(
   const resizeObserver = new ResizeObserver(() => {
     if (manualResizeEnabled || autoResizePaused) return;
 
-    // Используем внутренние размеры контента, а не boundingClientRect,
-    // чтобы zoom/scale бумаги не влиял на итоговый размер узла.
     const contentHeight = Math.max(contentContainer.scrollHeight, 40);
     const currentSize = node.size();
     const heightWithPadding = contentHeight + 42;

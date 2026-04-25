@@ -154,11 +154,12 @@ header h1 {
 
 .close {
     position: absolute;
-    top: 8px;
-    right: 12px;
-    font-size: 28px;
+    top: 25px;
+    right: 30px;
+    font-size: 30px;
     cursor: pointer;
     line-height: 1;
+    z-index: 20;
 }
 
 .context-menu {
