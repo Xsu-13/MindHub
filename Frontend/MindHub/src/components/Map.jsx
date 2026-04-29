@@ -8,65 +8,35 @@ import NavigationBar from './NavigationBar';
 import NodesPreviewModal from './NodesPreviewModal';
 import { CreateNode, PatchNode, DeleteNode, GetNodesByMapId } from '../services/urls.js';
 import MouseTracker from './MouseTracker.jsx';
+import { Card } from '../components/CardComponent';
 import { useMindMapLock } from './useMindMapLock.jsx';
+import { useNodesData } from '../hooks/useNodesData';
+import { usePaper } from '../hooks/usePaper';
 import {createDeleteButton, createAddButton} from '../utils/nodeTools.jsx'
 
-export const Card = dia.Element.define('example.ForeignObject', {
-  attrs: {
-    body: {
-      width: 'calc(w)',
-      height: 'calc(h)',
-      fill: {
-        type: 'linearGradient',
-        stops: [
-          { offset: 0, color: '#ff5c69' },
-          { offset: 0.5, color: '#ff4252' },
-          { offset: 1, color: '#ed2637' }
-        ]
-      }
-    },
-    foreignObject: {
-      width: 'calc(w-12)',
-      height: 'calc(h-12)',
-      x: 6,
-      y: 6
-    }
-  },
-}, {
-  markup: [
-    {
-      tagName: 'rect',
-      selector: 'body'
-    },
-    {
-      tagName: 'foreignObject',
-      selector: 'foreignObject'
-    }
-  ]
-});
-
 function Map() {
-  const paperRef = useRef(null);
   const location = useLocation();
   const [editingNode, setEditingNode] = useState(null);
   const [inputValue, setInputValue] = useState('');
-  const [nodes, setNodes] = useState([]);
-  const paperInstance = useRef(null);
-  const graphInstance = useRef(null);
-  const nodesMap = useRef({});
   const editingNodeRef = useRef(null);
-  const nodesList = useRef([]);
   
   const [isAILoading, setIsAILoading] = useState(false);
   const [aiError, setAiError] = useState(null);
   const [previewNodes, setPreviewNodes] = useState([]);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const zoomScaleRef = useRef(1);
   const [editorPosition, setEditorPosition] = useState({ top: 0, left: 0, width: 150 });
   const titleInputRef = useRef(null);
 
   const mapId = location.state?.mapId;
+  const { nodes, setNodes, nodesList, nodesMap, updateNodeInState } = useNodesData(mapId);
+
+  const { paperRef, paperInstance, graphInstance, zoomScaleRef } = usePaper(
+    () => {}, // handleElementClick - will be setup in useEffect with proper context
+    () => {}, // handleElementDoubleClick
+    () => {}, // handleElementMove  
+    () => {}  // handleElementDown
+  );
 
   const {
     requestLock,
@@ -247,55 +217,7 @@ function Map() {
       console.error('Ошибка обновления collapse:', e);
     }
 
-    updateTreeVisibility();
-  };
-
-
-  const updateTreeVisibility = () => {
-    const allNodes = nodesList.current || [];
-    const links = graphInstance.current?.getLinks() || [];
-
-    const visibilityMap = {};
-
-    // --- считаем видимость ---
-    allNodes.forEach(node => {
-      visibilityMap[node.id] = isNodeVisibleSafe(node.id, allNodes);
-    });
-
-    // --- применяем к нодам ---
-    allNodes.forEach(node => {
-      const nodeElement = nodesMap.current[node.id];
-      if (!nodeElement) return;
-
-      nodeElement.attr('root/display', visibilityMap[node.id] ? 'block' : 'none');
-    });
-
-    // --- применяем к линкам ---
-    links.forEach(link => {
-      const sourceId = link.getSourceElement()?.backId;
-      const targetId = link.getTargetElement()?.backId;
-
-      const visible =
-        visibilityMap[sourceId] && visibilityMap[targetId];
-
-      // 🔥 ВАЖНО: всегда явно выставляем
-      link.attr('line/display', visible ? 'block' : 'none');
-    });
-  };
-
-  const isNodeVisibleSafe = (nodeId, allNodes) => {
-    let current = allNodes.find(n => n.id === nodeId);
-
-    while (current?.parentNodeId) {
-      const parent = allNodes.find(n => n.id === current.parentNodeId);
-      if (!parent) break;
-
-      if (parent.isCollapsed) return false;
-
-      current = parent;
-    }
-
-    return true;
+    updateTreeVisibility(graphInstance, nodesList, nodesMap);
   };
 
   const updateNodeColor = (nodeId, color) => {
@@ -390,26 +312,6 @@ function Map() {
 
     const namespace = shapes;
 
-    const graph = new dia.Graph({}, { cellNamespace: namespace });
-    graphInstance.current = graph;
-
-    const paper = new dia.Paper({
-      el: paperRef.current,
-      model: graph,
-      width: '100%',
-      height: window.innerHeight - 70, // Учитываем высоту навигационной панели (60px + отступы)
-      background: { color: '#F5F5F5' },
-      cellViewNamespace: namespace,
-      preventDefaultViewAction: false
-    });
-    paper.scale(1, 1);
-    paper.translate(0, 0);
-    zoomScaleRef.current = 1;
-
-    paperInstance.current = paper;
-    let isPanning = false;
-    let panStart = { x: 0, y: 0 };
-
     const DeleteButton = createDeleteButton(removeNode, DeleteNode, nodesList, nodesMap, setNodes);
     const AddButton = createAddButton(
       CreateNode, 
@@ -418,8 +320,8 @@ function Map() {
       nodesMap, 
       mapId, 
       graphInstance.current, 
-      () => updateTreeVisibility(),
-      paper,
+      () => updateTreeVisibility(graphInstance, nodesList, nodesMap),
+      paperInstance.current,
       nodesList,
       updateNodeColor,
       updateNodeStyleInState,
@@ -435,8 +337,8 @@ function Map() {
         nodesMap,
         mapId,
         node.title,
-        paper,
-        graph,
+        paperInstance.current,
+        graphInstance.current,
         { x: node.x, y: node.y },
         node.style == null ? "#FFFFFF" : node.style.backgroundColor,
         node.id,
@@ -469,7 +371,7 @@ function Map() {
           newLink.set('z', 0);
           newLink.source(parentNode);
           newLink.target(currentNode);
-          newLink.addTo(graph);
+          newLink.addTo(graphInstance.current);
         }
       }
     });
@@ -484,7 +386,7 @@ function Map() {
         }
 
         // Скрываем все связанные ссылки
-        const links = graph.getLinks();
+        const links = graphInstance.current.getLinks();
         links.forEach(link => {
           const sourceId = link.getSourceElement()?.backId;
           const targetId = link.getTargetElement()?.backId;
@@ -496,7 +398,7 @@ function Map() {
       }
     });
 
-    paper.on('element:pointerup', async function (elementView) {
+    paperInstance.current.on('element:pointerup', async function (elementView) {
       const element = elementView.model;
       const position = element.position();
 
@@ -518,12 +420,12 @@ function Map() {
     const deleteButtonTool = new DeleteButton();
     const addButtonTool = new AddButton();
 
-    paper.on('element:pointerdown', async function (elementView) {
+    paperInstance.current.on('element:pointerdown', async function (elementView) {
       editingNodeRef.current = null;
       await requestLock(elementView.model.backId);
     })
     
-    paper.on('element:pointerclick', async function (elementView) {
+    paperInstance.current.on('element:pointerclick', async function (elementView) {
       window.dispatchEvent(
         new CustomEvent('mindhub:active-node-changed', {
           detail: { nodeId: String(elementView.model.backId) }
@@ -535,7 +437,7 @@ function Map() {
         setEditingNode(null);
         await releaseLock(currentElementView.model.backId);
       }
-      const links = graph.getLinks();
+      const links = graphInstance.current.getLinks();
       elementView.addTools(new dia.ToolsView({
         tools: [
           addButtonTool
@@ -552,7 +454,7 @@ function Map() {
       currentElementView = elementView;
     });
 
-    paper.on('element:pointerdblclick', async function (elementView) {
+    paperInstance.current.on('element:pointerdblclick', async function (elementView) {
       let canEdit = await canEditNode(elementView.model.backId);
       if (canEdit) {
         setEditingNode(elementView.model);
@@ -563,68 +465,21 @@ function Map() {
         }, 100);
       }
     });
-    paper.on('element:pointerup', async function (elementView) {
+    paperInstance.current.on('element:pointerup', async function (elementView) {
       if (editingNodeRef.current === null){
         setTimeout(async () => {
           await releaseLock(elementView.model.backId);
         }, 100);
       }
     });
-    paper.on('blank:pointerdown', function (evt) {
+    
+    paperInstance.current.on('blank:pointerdown', function () {
       window.dispatchEvent(
         new CustomEvent('mindhub:active-node-changed', {
           detail: { nodeId: null }
         })
       );
-      isPanning = true;
-      panStart = { x: evt.clientX, y: evt.clientY };
-      paper.el.style.cursor = 'grabbing';
     });
-
-    paper.on('blank:pointermove', function (evt) {
-      if (!isPanning) return;
-      const dx = evt.clientX - panStart.x;
-      const dy = evt.clientY - panStart.y;
-      const translation = paper.translate();
-      paper.translate(translation.tx + dx, translation.ty + dy);
-      panStart = { x: evt.clientX, y: evt.clientY };
-    });
-
-    const stopPanning = () => {
-      isPanning = false;
-      paper.el.style.cursor = 'default';
-    };
-
-    paper.on('blank:pointerup', stopPanning);
-    window.addEventListener('mouseup', stopPanning);
-
-    const handleWheel = (event) => {
-      event.preventDefault();
-
-      const currentScale = zoomScaleRef.current;
-      const delta = event.deltaY > 0 ? -0.1 : 0.1;
-      const newScale = Math.min(2.5, Math.max(0.4, currentScale + delta));
-      if (newScale === currentScale) return;
-
-      const rect = paper.el.getBoundingClientRect();
-      const offsetX = event.clientX - rect.left;
-      const offsetY = event.clientY - rect.top;
-      const translation = paper.translate();
-      const worldX = (offsetX - translation.tx) / currentScale;
-      const worldY = (offsetY - translation.ty) / currentScale;
-      const nextTx = offsetX - worldX * newScale;
-      const nextTy = offsetY - worldY * newScale;
-
-      paper.scale(newScale, newScale);
-      paper.translate(nextTx, nextTy);
-      zoomScaleRef.current = newScale;
-    };
-
-    paper.el.addEventListener('wheel', handleWheel, { passive: false });
-    return () => {
-      paper.el.removeEventListener('wheel', handleWheel);
-      window.removeEventListener('mouseup', stopPanning);
-    };
   }, [nodes]);
 
   const handleInputChange = (event) => {
@@ -766,7 +621,7 @@ function Map() {
   
 
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
       <NavigationBar 
         nodes={nodes}
         onNodesUpdate={handleNodesUpdate}
@@ -774,25 +629,25 @@ function Map() {
         onError={handleAIError}
       />
       
-      
-      {isAILoading && (
-        <div className="ai-loading-notification">
-          <span className="loading-icon">⌛</span>
-          Обработка запроса...
-        </div>
-      )}
-      
-      {aiError && (
-        <div className="ai-error-notification">
-          <span className="error-icon">⚠️</span>
-          {aiError}
-          <button onClick={() => setAiError(null)} className="close-notification">×</button>
-        </div>
-      )}
-      
-      <div id="paper" ref={paperRef}></div>
-      <MouseTracker></MouseTracker>
-      
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        {isAILoading && (
+          <div className="ai-loading-notification">
+            <span className="loading-icon">⌛</span>
+            Обработка запроса...
+          </div>
+        )}
+        
+        {aiError && (
+          <div className="ai-error-notification">
+            <span className="error-icon">⚠️</span>
+            {aiError}
+            <button onClick={() => setAiError(null)} className="close-notification">×</button>
+          </div>
+        )}
+        
+        <div id="paper" ref={paperRef}></div>
+        <MouseTracker></MouseTracker>
+      </div>
 
       <NodesPreviewModal
         isOpen={showPreviewModal}
@@ -823,7 +678,7 @@ function Map() {
           autoFocus
         />
       )}
-    </>
+    </div>
   )
 }
 

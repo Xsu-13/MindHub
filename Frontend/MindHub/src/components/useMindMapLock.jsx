@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { HubConnectionBuilder } from '@microsoft/signalr';
-import { CreateElement, Card } from './Map';
+import { CreateElement} from './Map';
+import { Card } from '../components/CardComponent';
 import { shapes } from '@joint/core';
 
 export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance, nodesList) => {
