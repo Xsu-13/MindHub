@@ -8,54 +8,20 @@ import NavigationBar from './NavigationBar';
 import NodesPreviewModal from './NodesPreviewModal';
 import { CreateNode, PatchNode, DeleteNode, GetNodesByMapId } from '../services/urls.js';
 import MouseTracker from './MouseTracker.jsx';
+import { Card } from '../components/CardComponent';
+import { useNodesData } from '../hooks/useNodesData';
 import { useMindMapLock } from './useMindMapLock.jsx';
 import {createDeleteButton, createAddButton} from '../utils/nodeTools.jsx'
-
-export const Card = dia.Element.define('example.ForeignObject', {
-  attrs: {
-    body: {
-      width: 'calc(w)',
-      height: 'calc(h)',
-      fill: {
-        type: 'linearGradient',
-        stops: [
-          { offset: 0, color: '#ff5c69' },
-          { offset: 0.5, color: '#ff4252' },
-          { offset: 1, color: '#ed2637' }
-        ]
-      }
-    },
-    foreignObject: {
-      width: 'calc(w-12)',
-      height: 'calc(h-12)',
-      x: 6,
-      y: 6
-    }
-  },
-}, {
-  markup: [
-    {
-      tagName: 'rect',
-      selector: 'body'
-    },
-    {
-      tagName: 'foreignObject',
-      selector: 'foreignObject'
-    }
-  ]
-});
+import {updateTreeVisibility} from '../utils/updateTreeVisibility.jsx'
 
 function Map() {
   const paperRef = useRef(null);
   const location = useLocation();
   const [editingNode, setEditingNode] = useState(null);
   const [inputValue, setInputValue] = useState('');
-  const [nodes, setNodes] = useState([]);
   const paperInstance = useRef(null);
   const graphInstance = useRef(null);
-  const nodesMap = useRef({});
   const editingNodeRef = useRef(null);
-  const nodesList = useRef([]);
   
   const [isAILoading, setIsAILoading] = useState(false);
   const [aiError, setAiError] = useState(null);
@@ -67,6 +33,7 @@ function Map() {
   const titleInputRef = useRef(null);
 
   const mapId = location.state?.mapId;
+  const { nodes, setNodes, nodesList, nodesMap, updateNodeInState } = useNodesData(mapId);
 
   const {
     requestLock,
@@ -247,56 +214,9 @@ function Map() {
       console.error('Ошибка обновления collapse:', e);
     }
 
-    updateTreeVisibility();
+    updateTreeVisibility(graphInstance, nodesList, nodesMap);
   };
 
-
-  const updateTreeVisibility = () => {
-    const allNodes = nodesList.current || [];
-    const links = graphInstance.current?.getLinks() || [];
-
-    const visibilityMap = {};
-
-    // --- считаем видимость ---
-    allNodes.forEach(node => {
-      visibilityMap[node.id] = isNodeVisibleSafe(node.id, allNodes);
-    });
-
-    // --- применяем к нодам ---
-    allNodes.forEach(node => {
-      const nodeElement = nodesMap.current[node.id];
-      if (!nodeElement) return;
-
-      nodeElement.attr('root/display', visibilityMap[node.id] ? 'block' : 'none');
-    });
-
-    // --- применяем к линкам ---
-    links.forEach(link => {
-      const sourceId = link.getSourceElement()?.backId;
-      const targetId = link.getTargetElement()?.backId;
-
-      const visible =
-        visibilityMap[sourceId] && visibilityMap[targetId];
-
-      // 🔥 ВАЖНО: всегда явно выставляем
-      link.attr('line/display', visible ? 'block' : 'none');
-    });
-  };
-
-  const isNodeVisibleSafe = (nodeId, allNodes) => {
-    let current = allNodes.find(n => n.id === nodeId);
-
-    while (current?.parentNodeId) {
-      const parent = allNodes.find(n => n.id === current.parentNodeId);
-      if (!parent) break;
-
-      if (parent.isCollapsed) return false;
-
-      current = parent;
-    }
-
-    return true;
-  };
 
   const updateNodeColor = (nodeId, color) => {
     const nodeModel = nodesMap.current[nodeId];
