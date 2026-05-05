@@ -13,6 +13,8 @@ namespace MindHub.Services.Nodes
         public int Id { get; set; }
         public int MapId { get; set; }
         public int? ParentNodeId { get; set; }
+        public string? TempId { get; set; }
+        public string? ParentTempId { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
         public float X { get; set; }

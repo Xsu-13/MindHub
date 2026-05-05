@@ -51,35 +51,25 @@ namespace MindHub.Services.OpenRouter
                 var systemPrompt =
                     "Ты — ИИ-ассистент ментальной карты.\n" +
                     "ОСНОВНЫЕ ПРАВИЛА:\n" +
-                    "1) По возможности НЕ задавай уточняющих вопросов и строй результат по лучшему предположению.\n" +
-                    "2) Названия узлов (title) всегда на русском языке.\n" +
-                    "3) Поле content всегда содержит код или псевдокод (без объяснений вне кода).\n" +
-                    "4) Отвечай строго JSON-объектом одного из форматов:\n" +
-                    "   a) Для результата:\n" +
-                    "   {\n" +
-                    "     \"type\": \"nodes\",\n" +
-                    "     \"clarificationQuestion\": null,\n" +
-                    "     \"nodes\": [\n" +
-                    "       {\n" +
-                    "         \"id\": 0,\n" +
-                    "         \"mapId\": 0,\n" +
-                    "         \"parentNodeId\": 0,\n" +
-                    "         \"title\": \"Название на русском\",\n" +
-                    "         \"content\": \"код или псевдокод\",\n" +
-                    "         \"x\": 0,\n" +
-                    "         \"y\": 0\n" +
-                    "       }\n" +
-                    "     ]\n" +
-                    "   }\n" +
-                    "   b) Если без уточнения действительно нельзя:\n" +
-                    "   {\n" +
-                    "     \"type\": \"clarification\",\n" +
-                    "     \"clarificationQuestion\": \"УТОЧНЕНИЕ: ...\",\n" +
-                    "     \"nodes\": []\n" +
-                    "   }\n" +
-                    "5) Если задаешь вопрос, начинай его строго с префикса \"УТОЧНЕНИЕ:\".\n" +
-                    "6) Никаких markdown-блоков и текста вне JSON.\n\n" +
-                    "Учти текущий контекст узлов и пользовательский запрос.\n\n";
+                    "1) НЕ используй реальные id.\n" +
+                    "2) Используй только tempId (строка, уникальная внутри ответа).\n" +
+                    "3) parentNodeId ссылается на tempId родителя.\n" +
+                    "4) Названия узлов на русском.\n" +
+                    "5) content — только код или псевдокод.\n" +
+                    "6) Ответ строго JSON:\n" +
+                    "{\n" +
+                    "  \"type\": \"nodes\",\n" +
+                    "  \"nodes\": [\n" +
+                    "    {\n" +
+                    "      \"tempId\": \"node-1\",\n" +
+                    "      \"parentNodeId\": null,\n" +
+                    "      \"title\": \"...\",\n" +
+                    "      \"content\": \"...\",\n" +
+                    "      \"x\": 0,\n" +
+                    "      \"y\": 0\n" +
+                    "    }\n" +
+                    "  ]\n" +
+                    "}";
 
                 var contextJson = "";
                 if (request.context != null && request.context.Any())
@@ -236,7 +226,6 @@ namespace MindHub.Services.OpenRouter
             }
             catch (JsonException ex)
             {
-                // Попыткаإضة простые исправления
                 cleanedResponse = CleanUpJson(cleanedResponse);
                 token = JToken.Parse(cleanedResponse);
             }
@@ -272,14 +261,15 @@ namespace MindHub.Services.OpenRouter
             {
                 var node = new NodeDto
                 {
-                    Id = nodeJson["Id"]?.Value<int>() ?? nodeJson["id"]?.Value<int>() ?? 0,
-                    MapId = nodeJson["MapId"]?.Value<int>() ?? nodeJson["mapId"]?.Value<int>() ?? 0,
-                    ParentNodeId = nodeJson["ParentNodeId"]?.Value<int>() ?? nodeJson["parentNodeId"]?.Value<int>(),
-                    Title = nodeJson["Title"]?.Value<string>() ?? nodeJson["title"]?.Value<string>() ?? "",
-                    Content = nodeJson["Content"]?.Value<string>() ?? nodeJson["content"]?.Value<string>() ?? "",
-                    X = nodeJson["X"]?.Value<float>() ?? nodeJson["x"]?.Value<float>() ?? 0,
-                    Y = nodeJson["Y"]?.Value<float>() ?? nodeJson["y"]?.Value<float>() ?? 0,
-                    Style = null
+                    Id = nodeJson["id"]?.Value<int>() ?? 0,
+                    MapId = nodeJson["mapId"]?.Value<int>() ?? 0,
+                    Title = nodeJson["title"]?.Value<string>() ?? "",
+                    Content = nodeJson["content"]?.Value<string>() ?? "",
+                    X = nodeJson["x"]?.Value<float>() ?? 0,
+                    Y = nodeJson["y"]?.Value<float>() ?? 0,
+
+                    TempId = nodeJson["tempId"]?.Value<string>() ?? nodeJson["TempId"]?.Value<string>(),
+                    ParentTempId = nodeJson["parentNodeId"]?.Value<string>() ?? nodeJson["ParentNodeId"]?.Value<string>()
                 };
 
                 if (string.IsNullOrWhiteSpace(node.Title))

@@ -170,8 +170,11 @@ export const fetchGetNodes = async (mapId) => {
 }
 
 export const CreateNode = async (node) => {
-    var nodes = await fetchCreateNode(node) ?? "Что-то пошло не так."
-    return nodes; 
+    const response = await fetchCreateNode(node);
+    if (!response || !response.data) {
+        throw new Error('Ошибка создания узла: некорректный ответ сервера');
+    }
+    return response;
 }
 
 export const fetchCreateNode = async (node) => {
@@ -180,13 +183,17 @@ export const fetchCreateNode = async (node) => {
     }
     catch(e)
     {
-        console.log(e);
+        console.error('Ошибка при создании узла:', e);
+        throw e;
     }
 }
 
 export const PatchNode = async (nodeId, node) => {
-    var nodes = await fetchPatchNode(nodeId, node) ?? "Что-то пошло не так."
-    return nodes; 
+    const response = await fetchPatchNode(nodeId, node);
+    if (!response) {
+        throw new Error('Ошибка обновления узла: некорректный ответ сервера');
+    }
+    return response;
 }
 
 export const fetchPatchNode = async (nodeId, patch) => {
@@ -195,14 +202,17 @@ export const fetchPatchNode = async (nodeId, patch) => {
     }
     catch(e)
     {
-        console.log(e);
+        console.error('Ошибка при обновлении узла', nodeId, ':', e);
         throw e;
     }
 }
 
 export const DeleteNode = async (nodeId) => {
-    var nodes = await fetchDeleteNode(nodeId) ?? "Что-то пошло не так."
-    return nodes; 
+    const response = await fetchDeleteNode(nodeId);
+    if (!response) {
+        throw new Error('Ошибка удаления узла: некорректный ответ сервера');
+    }
+    return response;
 }
 
 export const fetchDeleteNode = async (nodeId) => {
@@ -211,7 +221,8 @@ export const fetchDeleteNode = async (nodeId) => {
     }
     catch(e)
     {
-        console.log(e);
+        console.error('Ошибка при удалении узла', nodeId, ':', e);
+        throw e;
     }
 }
 

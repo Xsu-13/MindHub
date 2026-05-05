@@ -61,141 +61,97 @@ function Map() {
   };
 
   const handleNodesUpdate = (newNodes) => {
-    const defaultStyle = {
-      backgroundColor: "#FFFFFF",
-      textColor: "#353535",
-      borderColor: "#C94A46",
-      fontFamily: "py",
-      fontSize: 14
-    };
-
-    const normalizedNodes = (newNodes || []).map((incomingNode) => {
-      const existingNode = nodesList.current.find((node) => node.id === incomingNode.id);
-      if (existingNode) {
-        return {
-          ...incomingNode,
-          style: incomingNode.style ?? existingNode.style ?? null,
-          width: incomingNode.width ?? existingNode.width ?? 180,
-          height: incomingNode.height ?? existingNode.height ?? 70,
-          isCodeBlockOpen: incomingNode.isCodeBlockOpen ?? existingNode.isCodeBlockOpen ?? false,
-          isCollapsed: incomingNode.isCollapsed ?? existingNode.isCollapsed ?? false
-        };
-      }
-
-      return {
-        ...incomingNode,
-        style: incomingNode.style ?? defaultStyle,
-        width: incomingNode.width ?? 180,
-        height: incomingNode.height ?? 70,
-        isCodeBlockOpen: incomingNode.isCodeBlockOpen ?? false,
-        isCollapsed: incomingNode.isCollapsed ?? false
-      };
-    });
-
-    // Добавляем информацию об удаленных нодах
-    const newNodesMap = new Set(normalizedNodes.map(n => n.id));
-    const deletedNodes = (nodesList.current || []).filter(n => !newNodesMap.has(n.id));
-
-    setPreviewNodes({
-      added: normalizedNodes.filter(n => !nodesList.current.some(existing => existing.id === n.id)),
-      modified: normalizedNodes.filter(n => nodesList.current.some(existing => 
-        existing.id === n.id && 
-        (existing.title !== n.title || existing.content !== n.content)
-      )),
-      deleted: deletedNodes
-    });
-    setShowPreviewModal(true);
+  const defaultStyle = {
+    backgroundColor: "#FFFFFF",
+    textColor: "#353535",
+    borderColor: "#C94A46",
+    fontFamily: "py",
+    fontSize: 14
   };
+
+  const normalizedNodes = (newNodes || []).map((node, index) => ({
+    ...node,
+    tempId: node.tempId || `temp-${index}`,
+    style: node.style ?? defaultStyle,
+    width: node.width ?? 180,
+    height: node.height ?? 70,
+    isCodeBlockOpen: node.isCodeBlockOpen ?? false,
+    isCollapsed: node.isCollapsed ?? false
+  }));
+
+  const existingTitles = new Set(nodesList.current.map(n => n.title));
+
+  setPreviewNodes({
+    added: normalizedNodes.filter(n => !existingTitles.has(n.title)),
+    modified: normalizedNodes.filter(n => existingTitles.has(n.title)),
+    deleted: []
+  });
+
+  setShowPreviewModal(true);
+};
 
   const handleConfirmChanges = async () => {
-    setIsSaving(true);
-    try {
-      const updatedNodes = [];
-      
-      // Обрабатываем modified ноды
-      if (previewNodes.modified) {
-        for (const newNode of previewNodes.modified) {
-          const existingNode = nodes.find(n => n.id === newNode.id);
-          
-          if (existingNode) {
-            await PatchNode(newNode.id, {
-              title: newNode.title,
-              content: newNode.content,
-              width: newNode.width ?? existingNode.width ?? 180,
-              height: newNode.height ?? existingNode.height ?? 70,
-              isCodeBlockOpen: newNode.isCodeBlockOpen ?? existingNode.isCodeBlockOpen ?? false,
-              isCollapsed: newNode.isCollapsed ?? existingNode.isCollapsed ?? false
-            });
-            updatedNodes.push({
-              ...existingNode,
-              ...newNode,
-              style: newNode.style ?? existingNode.style ?? null
-            });
-          }
-        }
-      }
+  setIsSaving(true);
 
-      // Обрабатываем добавленные (added) ноды
-      if (previewNodes.added) {
-        for (const newNode of previewNodes.added) {
-          const defaultStyle = {
-            backgroundColor: "#FFFFFF",
-            textColor: "#353535",
-            borderColor: "#C94A46",
-            fontFamily: "py",
-            fontSize: 14
-          };
-          const createdNode = await CreateNode({
-            mapId: mapId,
-            parentNodeId: newNode.parentNodeId,
-            title: newNode.title,
-            content: newNode.content,
-            x: newNode.x,
-            y: newNode.y,
-            width: newNode.width ?? 180,
-            height: newNode.height ?? 70,
-            isCodeBlockOpen: newNode.isCodeBlockOpen ?? false,
-            isCollapsed: newNode.isCollapsed ?? false,
-            style: newNode.style ?? defaultStyle
-          });
-          updatedNodes.push(createdNode.data);
-        }
-      }
+  try {
+    const tempToRealId = new globalThis.Map();
+    const createdNodes = [];
 
-      if (previewNodes.deleted) {
-        for (const deletedNode of previewNodes.deleted) {
-          await DeleteNode(deletedNode.id);
-        }
-      }
-      
-      let finalNodes = [...nodes];
-      
-      updatedNodes.forEach(updatedNode => {
-        const index = finalNodes.findIndex(n => n.id === updatedNode.id);
-        if (index >= 0) {
-          finalNodes[index] = updatedNode;
-        } else {
-          finalNodes.push(updatedNode);
-        }
+    for (const node of previewNodes.added || []) {
+      const created = await CreateNode({
+        mapId: mapId,
+        parentNodeId: null,
+        title: node.title,
+        content: node.content,
+        x: node.x,
+        y: node.y,
+        width: node.width,
+        height: node.height,
+        isCodeBlockOpen: node.isCodeBlockOpen,
+        isCollapsed: node.isCollapsed,
+        style: node.style
       });
-      
-      if (previewNodes.deleted) {
-        const deletedIds = new Set(previewNodes.deleted.map(n => n.id));
-        finalNodes = finalNodes.filter(n => !deletedIds.has(n.id));
-      }
-      
-      setNodes(finalNodes);
-      nodesList.current = finalNodes;
-      setShowPreviewModal(false);
-      setPreviewNodes({});
 
-    } catch (error) {
-      console.error('Ошибка при сохранении изменений:', error);
-      setAiError('Ошибка при сохранении изменений: ' + error.message);
-    } finally {
-      setIsSaving(false);
+      const realId = created.data.id;
+      tempToRealId.set(node.tempId, realId);
+      createdNodes.push({ ...created.data, tempId: node.tempId });
     }
-  };
+
+    for (const node of createdNodes) {
+      const original = previewNodes.added.find(n => n.tempId === node.tempId);
+      if (!original?.parentTempId) continue;
+      const realParentId = tempToRealId.get(original.parentTempId);
+      if (realParentId) {
+        await PatchNode(node.id, { parentNodeId: realParentId });
+        node.parentNodeId = realParentId;
+      }
+    }
+
+    const updatedNodes = [];
+    for (const node of previewNodes.modified || []) {
+      const existing = nodes.find(n => n.title === node.title);
+      if (!existing) continue;
+      await PatchNode(existing.id, { title: node.title, content: node.content });
+      updatedNodes.push({ ...existing, ...node });
+    }
+
+    const finalNodes = [
+      ...nodes.filter(n => !updatedNodes.some(u => u.id === n.id)),
+      ...updatedNodes,
+      ...createdNodes
+    ];
+
+    setNodes(finalNodes);
+    nodesList.current = finalNodes;
+    setShowPreviewModal(false);
+    setPreviewNodes({});
+  } catch (error) {
+    console.error(error);
+    setAiError(error.message);
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   const handleClosePreview = () => {
     setShowPreviewModal(false);
@@ -317,7 +273,7 @@ function Map() {
       el: paperRef.current,
       model: graph,
       width: '100%',
-      height: window.innerHeight - 70, // Учитываем высоту навигационной панели (60px + отступы)
+      height: window.innerHeight - 70,
       background: { color: '#F5F5F5' },
       cellViewNamespace: namespace,
       preventDefaultViewAction: false
@@ -329,6 +285,8 @@ function Map() {
     paperInstance.current = paper;
     let isPanning = false;
     let panStart = { x: 0, y: 0 };
+
+    nodesMap.current = {};
 
     const DeleteButton = createDeleteButton(removeNode, DeleteNode, nodesList, nodesMap, setNodes);
     const AddButton = createAddButton(

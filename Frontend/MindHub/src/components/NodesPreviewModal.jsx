@@ -16,13 +16,11 @@ const NodesPreviewModal = ({
     return content.length > 100 ? content.substring(0, 100) + '...' : content;
   };
 
-  // Обработка как старого формата (массив), так и нового (объект с категориями)
   let added = [];
   let modified = [];
   let deleted = [];
 
   if (Array.isArray(newNodes)) {
-    // Старый формат - поддерживаем для совместимости
     const originalMap = {};
     originalNodes.forEach(node => {
       originalMap[node.id] = node;
@@ -50,7 +48,6 @@ const NodesPreviewModal = ({
       }
     });
   } else {
-    // Новый формат
     added = newNodes.added || [];
     modified = newNodes.modified || [];
     deleted = newNodes.deleted || [];
@@ -78,17 +75,15 @@ const NodesPreviewModal = ({
           </div>
           
           <div className="nodes-preview">
-            {/* Обновленные ноды */}
-            {modified.map((node) => (
+            {modified.map((node, index) => (
               <div 
-                key={node.id} 
+                key={node.tempId || node.id || `modified-${index}`}
                 className="node-item modified-node"
               >
                 <div className="node-header">
                   <span className="node-title">{node.title}</span>
                   <span className="node-badge modified">ИЗМЕНЕН</span>
                 </div>
-                
                 <div className="node-content">
                   <div className="content-section">
                     <span className="content-label">Было:</span>
@@ -106,17 +101,15 @@ const NodesPreviewModal = ({
               </div>
             ))}
 
-            {/* Новые ноды */}
-            {added.map((node) => (
+            {added.map((node, index) => (
               <div 
-                key={node.id} 
+                key={node.tempId || node.id || `added-${index}`}
                 className="node-item new-node"
               >
                 <div className="node-header">
                   <span className="node-title">{node.title}</span>
                   <span className="node-badge new">НОВЫЙ</span>
                 </div>
-                
                 <div className="node-content">
                   <div className="content-section">
                     <span className="content-label">Описание:</span>
@@ -128,17 +121,15 @@ const NodesPreviewModal = ({
               </div>
             ))}
 
-            {/* Удаленные ноды */}
-            {deleted.map((node) => (
+            {deleted.map((node, index) => (
               <div 
-                key={node.id} 
+                key={node.tempId || node.id || `deleted-${index}`}
                 className="node-item deleted-node"
               >
                 <div className="node-header">
                   <span className="node-title">{node.title}</span>
                   <span className="node-badge deleted">УДАЛЕН</span>
                 </div>
-                
                 <div className="node-content">
                   <div className="content-section">
                     <span className="content-label">Было:</span>
