@@ -178,12 +178,6 @@ export const useMindMapLock = (nodeMapRef, mapId, paperInstance, graphInstance, 
 
     try {
       await connection.invoke('UpdateNodePosition', mapId.toString(), nodeId.toString(), x, y);
-      // Проверяем, заблокирован ли узел текущим пользователем
-      // if (lockedNodes[nodeId] && lockedNodes[nodeId] === currentUser) {
-      //   await connection.invoke('UpdateNodePosition', mapId.toString(), nodeId.toString(), x, y);
-      //   return true;
-      // }
-      // return false;
     } catch (error) {
       console.error('Move node failed:', error);
       return false;

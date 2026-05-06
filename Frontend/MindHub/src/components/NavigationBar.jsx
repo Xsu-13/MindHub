@@ -13,7 +13,8 @@ const NavigationBar = ({ nodes = [], onNodesUpdate, onLoading, onError }) => {
   const modelOptions = [
     { value: 'deepseek/deepseek-v3.2', label: 'DeepSeek v3.2' },
     { value: 'google/gemini-3-flash-preview', label: 'Gemini 3 Flash Preview' },
-    { value: 'openai/gpt-4o-mini', label: 'GPT-4o Mini' }
+    { value: 'openai/gpt-4o-mini', label: 'GPT-4o Mini' },
+    { value: 'local', label: 'Local' }
   ];
   const quickPrompts = [
     'Создай карту на тему "REST API на ASP.NET Core" с основными узлами.',

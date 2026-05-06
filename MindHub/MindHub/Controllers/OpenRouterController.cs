@@ -8,13 +8,16 @@ namespace MindHub.API.Controllers
     public class OpenRouterController : BaseAPIController
     {
         private readonly IOpenRouterService _openRouterService;
+        private readonly LocalLLMAdapter _localLLMAdapter;
 
         public OpenRouterController(
             IUserContextProvider userContextProvider,
-            IOpenRouterService openRouterService)
+            IOpenRouterService openRouterService,
+            LocalLLMAdapter localLLMAdapter)
             : base(userContextProvider)
         {
             _openRouterService = openRouterService ?? throw new ArgumentNullException(nameof(openRouterService));
+            _localLLMAdapter = localLLMAdapter ?? throw new ArgumentNullException(nameof(localLLMAdapter));
         }
 
         [HttpPost("query")]
@@ -42,9 +45,21 @@ namespace MindHub.API.Controllers
 
             try
             {
-                // Используем перегрузку с расширенными параметрами
-                var response = await _openRouterService.SendQueryAsync(request, cancellationToken);
-                
+                IOpenRouterService service;
+
+
+                if (request.Model != null &&
+                    (request.Model.Equals("local", StringComparison.OrdinalIgnoreCase)))
+                {
+                    service = _localLLMAdapter;
+                }
+                else
+                { 
+                    service = _openRouterService;
+                }
+
+                var response = await service.SendQueryAsync(request, cancellationToken);
+
                 if (!response.Success)
                 {
                     return BadRequest(response);
