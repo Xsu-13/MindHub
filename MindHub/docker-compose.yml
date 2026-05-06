@@ -1,6 +1,22 @@
 version: '3.4'
 
 services:
+  mindhub.frontend:
+    image: ${DOCKER_REGISTRY-}mindhubfrontend
+    build:
+      context: ../Frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://mindhub.api:8080
+    ports:
+      - "3000:80"
+    networks:
+      - mindhub_network
+    depends_on:
+      - mindhub.api
+    environment:
+      - VITE_API_URL=http://mindhub.api:8080
+
   mindhub.api:
     image: ${DOCKER_REGISTRY-}mindhubapi
     build:
@@ -11,6 +27,13 @@ services:
       - "5001:8081"
     networks:
       - mindhub_network
+    depends_on:
+      - postgresql
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTPS_PORTS=8081
+      - ConnectionStrings__DefaultConnection=Server=postgres;Port=5432;Database=mindhub;User Id=postgres;Password=123;
 
   postgresql:
     image: postgres:13

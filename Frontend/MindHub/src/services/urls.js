@@ -10,7 +10,7 @@ axios.interceptors.request.use((config) => {
     return config;
 });
 
-let domen = "https://localhost:5001";
+let domen = import.meta.env.VITE_API_URL || "https://localhost:5001";
 
 //---------------USER----------------
 

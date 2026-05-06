@@ -1,6 +1,16 @@
 version: '3.4'
 
 services:
+  mindhub.frontend:
+    build:
+      args:
+        - VITE_API_URL=http://localhost:5000
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    volumes:
+      - ../Frontend/MindHub:/app
+      - /app/node_modules
+
   mindhub.api:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
