@@ -48,10 +48,8 @@ export const createDeleteButton = (removeNode, deleteNode, nodesList, nodesMap, 
                 });
             }
 
-            await deleteNode(targetId);
-
+            // Удаляем элементы с визуально БЕЗ изменения состояния сразу
             for (const idToDelete of idsToDelete) {
-              await removeNode(idToDelete);
               const nodeView = nodesMap.current[idToDelete];
               if (nodeView) {
                 nodeView.remove();
@@ -59,9 +57,20 @@ export const createDeleteButton = (removeNode, deleteNode, nodesList, nodesMap, 
               }
             }
 
-            const filteredNodes = allNodes.filter((node) => !idsToDelete.has(node.id));
-            setNodes(filteredNodes);
-            nodesList.current = filteredNodes;
+            // Затем удаляем с бэкенда и обновляем состояние с задержкой
+            await deleteNode(targetId);
+            
+            for (const idToDelete of idsToDelete) {
+              await removeNode(idToDelete);
+            }
+
+            // Обновляем состояние после визуального удаления
+            // Используем requestAnimationFrame для плавного обновления
+            requestAnimationFrame(() => {
+              const filteredNodes = allNodes.filter((node) => !idsToDelete.has(node.id));
+              setNodes(filteredNodes);
+              nodesList.current = filteredNodes;
+            });
           } catch (error) {
             console.error('Ошибка удаления узла:', error);
           }

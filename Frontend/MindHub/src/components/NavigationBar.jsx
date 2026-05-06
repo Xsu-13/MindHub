@@ -8,7 +8,7 @@ const NavigationBar = ({ nodes = [], onNodesUpdate, onLoading, onError }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
-  const [selectedModel, setSelectedModel] = useState('openai/gpt-4o-mini');
+  const [selectedModel, setSelectedModel] = useState('google/gemini-3-flash-preview');
   const navigate = useNavigate();
   const modelOptions = [
     { value: 'deepseek/deepseek-v3.2', label: 'DeepSeek v3.2' },

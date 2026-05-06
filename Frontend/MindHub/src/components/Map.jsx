@@ -307,73 +307,6 @@ function Map() {
       handleNodeCollapseChange
     );
 
-    const nodeMap = {};
-    nodes.forEach((node) => {
-      var newNode = CreateElement(
-        nodesMap,
-        mapId,
-        node.title,
-        paper,
-        graph,
-        { x: node.x, y: node.y },
-        node.style == null ? "#FFFFFF" : node.style.backgroundColor,
-        node.id,
-        node.content,
-        false,
-        node.style?.fontFamily,
-        node.style?.fontSize || 14,
-        node.style?.backgroundColor || "#FFFFFF",
-        node.style?.id ?? null,
-        node.width ?? 180,
-        node.height ?? 70,
-        node.isCodeBlockOpen ?? false,
-        node.isCollapsed ?? false,
-        updateNodeColor,
-        updateNodeStyleInState,
-        updateNodeSizeByFont,
-        handleCodeBlockVisibilityChange,
-        updateNodeStyleRealtime,
-        handleNodeCollapseChange
-      );
-      nodeMap[node.id] = newNode;
-    });
-
-    nodes.forEach((node) => {
-      if (node.parentNodeId) {
-        const parentNode = nodeMap[node.parentNodeId];
-        const currentNode = nodeMap[node.id];
-        if (parentNode && currentNode) {
-          const newLink = new shapes.standard.Link();
-          newLink.set('z', 0);
-          newLink.source(parentNode);
-          newLink.target(currentNode);
-          newLink.addTo(graph);
-        }
-      }
-    });
-
-    nodes.forEach((node) => {
-      if (node.isCollapsed) {
-        const nodeElement = nodesMap[node.id];
-        if (nodeElement) {
-          nodeElement.attr('body/visibility', 'hidden');
-          nodeElement.attr('body/pointer-events', 'none');
-          nodeElement.attr('body/stroke-dasharray', '5,5');
-        }
-
-        // Скрываем все связанные ссылки
-        const links = graph.getLinks();
-        links.forEach(link => {
-          const sourceId = link.getSourceElement()?.backId;
-          const targetId = link.getTargetElement()?.backId;
-
-          if (sourceId === node.id || targetId === node.id) {
-            link.attr('line/visibility', 'hidden');
-          }
-        });
-      }
-    });
-
     paper.on('element:pointerup', async function (elementView) {
       const element = elementView.model;
       const position = element.position();
@@ -503,7 +436,97 @@ function Map() {
       paper.el.removeEventListener('wheel', handleWheel);
       window.removeEventListener('mouseup', stopPanning);
     };
-  }, [nodes]);
+  }, []);
+
+  // Отдельный эффект для управления узлами БЕЗ пересоздания графа
+  useEffect(() => {
+    if (!graphInstance.current || !paperInstance.current || !nodes || nodes.length === 0) return;
+
+    const currentNodeIds = new Set(Object.keys(nodesMap.current).map(k => String(k)));
+    const newNodeIds = new Set(nodes.map(n => String(n.id)));
+
+    // Определяем какие узлы добавить, удалить или обновить
+    const nodesToAdd = nodes.filter(n => !currentNodeIds.has(String(n.id)));
+    const nodesToRemove = Array.from(currentNodeIds).filter(id => !newNodeIds.has(id));
+
+    // Удаляем узлы которых больше нет
+    nodesToRemove.forEach(nodeId => {
+      const node = nodesMap.current[nodeId];
+      if (node) {
+        node.remove();
+        delete nodesMap.current[nodeId];
+      }
+    });
+
+    // Добавляем новые узлы
+    const nodeMap = {};
+    nodesToAdd.forEach((node) => {
+      const newNode = CreateElement(
+        nodesMap,
+        mapId,
+        node.title,
+        paperInstance.current,
+        graphInstance.current,
+        { x: node.x, y: node.y },
+        node.style?.backgroundColor || "#FFFFFF",
+        node.id,
+        node.content,
+        false,
+        node.style?.fontFamily,
+        node.style?.fontSize || 14,
+        node.style?.backgroundColor || "#FFFFFF",
+        node.style?.id ?? null,
+        node.width ?? 180,
+        node.height ?? 70,
+        node.isCodeBlockOpen ?? false,
+        node.isCollapsed ?? false,
+        updateNodeColor,
+        updateNodeStyleInState,
+        updateNodeSizeByFont,
+        handleCodeBlockVisibilityChange,
+        updateNodeStyleRealtime,
+        handleNodeCollapseChange
+      );
+      nodeMap[node.id] = newNode;
+    });
+
+    // Добавляем связи для новых узлов
+    nodesToAdd.forEach((node) => {
+      if (node.parentNodeId) {
+        const parentNode = nodesMap.current[node.parentNodeId];
+        const currentNode = nodesMap.current[node.id];
+        if (parentNode && currentNode) {
+          const newLink = new shapes.standard.Link();
+          newLink.set('z', 0);
+          newLink.source(parentNode);
+          newLink.target(currentNode);
+          newLink.addTo(graphInstance.current);
+        }
+      }
+    });
+
+    // Обновляем видимость коллапсированных узлов
+    nodesToAdd.forEach((node) => {
+      if (node.isCollapsed) {
+        const nodeElement = nodesMap.current[node.id];
+        if (nodeElement) {
+          nodeElement.attr('body/visibility', 'hidden');
+          nodeElement.attr('body/pointer-events', 'none');
+          nodeElement.attr('body/stroke-dasharray', '5,5');
+        }
+
+        const links = graphInstance.current.getLinks();
+        links.forEach(link => {
+          const sourceId = link.getSourceElement()?.backId;
+          const targetId = link.getTargetElement()?.backId;
+
+          if (sourceId === node.id || targetId === node.id) {
+            link.attr('line/visibility', 'hidden');
+          }
+        });
+      }
+    });
+  }, [nodes, mapId]);
 
   const handleInputChange = (event) => {
     setInputValue(event.target.value);
