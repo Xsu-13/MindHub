@@ -34,7 +34,7 @@ namespace MindHub.API.Controllers
 
             await _inviteService.CreateAsync(invite);
 
-            var inviteUrl = $"http://localhost:5173/invite/{token}";
+            var inviteUrl = $"http://localhost:3000/invite/{token}";
 
             return Ok(inviteUrl);
         }
