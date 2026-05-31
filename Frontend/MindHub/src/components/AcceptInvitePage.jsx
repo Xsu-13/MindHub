@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 function AcceptInvitePage() {
     const navigate = useNavigate();
     const { token } = useParams();
-    const [status, setStatus] = useState('processing'); // 'processing', 'success', 'error'
+    const [status, setStatus] = useState('processing');
     const [errorMessage, setErrorMessage] = useState('');
     const [retryKey, setRetryKey] = useState(0);
 

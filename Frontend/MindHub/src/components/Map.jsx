@@ -347,17 +347,14 @@ function Map() {
         await releaseLock(currentElementView.model.backId);
       }
       const links = graph.getLinks();
+      const hasParent = links.some(link => link.getTargetElement() === elementView.model);
+      
+      // Показываем delete и add кнопки для всех узлов (включая корневые)
       elementView.addTools(new dia.ToolsView({
         tools: [
+          deleteButtonTool,
           addButtonTool
         ]
-      }));
-      if (links.some(link => link.getTargetElement() === elementView.model))
-        elementView.addTools(new dia.ToolsView({
-          tools: [
-            deleteButtonTool,
-            addButtonTool
-          ]
         }));
 
       currentElementView = elementView;
@@ -409,6 +406,69 @@ function Map() {
     paper.on('blank:pointerup', stopPanning);
     window.addEventListener('mouseup', stopPanning);
 
+paper.on('blank:pointerdown', async (evt, x, y) => {
+  if (evt.button !== 2) return; // только правая кнопка
+
+  evt.preventDefault();
+
+  console.log('ПКМ работает');
+
+  try {
+    const node = await CreateNode({
+      mapId: mapId,
+      parentNodeId: null,
+      title: "New Root Node",
+      x,
+      y,
+      width: 180,
+      height: 70,
+      isCodeBlockOpen: false,
+      content: "",
+      style: {
+        backgroundColor: "#ff5252",
+        textColor: "#353535",
+        borderColor: "#C94A46",
+        fontFamily: "py",
+        fontSize: 14
+      }
+    });
+
+    CreateElement(
+      nodesMap,
+      mapId,
+      "New Root Node",
+      paper,
+      graph,
+      { x, y },
+      "#ff5252",
+      node.data.id,
+      "",
+      false,
+      "py",
+      14,
+      "#ff5252",
+      node.data?.style?.id ?? null,
+      node.data?.width ?? 180,
+      node.data?.height ?? 70,
+      node.data?.isCodeBlockOpen ?? false,
+      node.data?.isCollapsed ?? false,
+      updateNodeColor,
+      updateNodeStyleInState,
+      updateNodeSizeByFont,
+      handleCodeBlockVisibilityChange,
+      updateNodeStyleRealtime,
+      handleNodeCollapseChange
+    );
+
+    nodesList.current.push(node.data);
+    setNodes([...nodesList.current]);
+
+    await addNode(node.data.id, x, y, null);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
     const handleWheel = (event) => {
       event.preventDefault();
 
@@ -438,7 +498,6 @@ function Map() {
     };
   }, []);
 
-  // Отдельный эффект для управления узлами БЕЗ пересоздания графа
   useEffect(() => {
     if (!graphInstance.current || !paperInstance.current || !nodes || nodes.length === 0) return;
 

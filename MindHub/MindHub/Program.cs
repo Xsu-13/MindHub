@@ -17,7 +17,13 @@ services.Configure<OpenRouterSettings>(options => builder.Configuration.GetSecti
 builder.Services.Configure<LocalLLMSettings>(builder.Configuration.GetSection("LocalLLM"));
 builder.Services.Configure<MindHub.Services.LocalLLM.LLMProviderSettings>(builder.Configuration.GetSection("LLMProvider"));
 
-
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    // Таймаут для keep-alive соединений
+    serverOptions.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(15);
+    // Максимальное время на получение заголовков запроса
+    serverOptions.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(15);
+});
 
 builder.Host
                 .UseServiceProviderFactory(new AutofacServiceProviderFactory())
